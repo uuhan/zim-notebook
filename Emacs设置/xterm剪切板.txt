@@ -1,0 +1,56 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2013-03-29T03:26:54+08:00
+
+====== xterm剪切板 ======
+Created 星期五 29 三月 2013
+
+（当然有人更喜欢 xterm 默认的粘贴方式，这篇记录不过是让大家多一种选择）
+现在情况：在 TERM 中选中文字“甲”，需鼠标中键贴入其它程序（如 firefox ），而此时在 firefox 里选中文字“乙”并不 Ctrl-c ，再用鼠标中键贴出，发现贴出“乙”，而“甲”不见了。
+
+需要效果：在 TERM 中选中即可 Ctrl-v 贴入 firefox 一类的程序中，无需鼠标中键。而在 firefox 一类的程序中 Ctrl-c 复制后，鼠标不论再选中什么，在 TERM 中 Shift-Insert 出的依然是 Ctrl-c 的内容
+
+在 Xwindow 里有一个选中缓冲（PRIMARY）和一个剪贴板（CLIPBOARD）
+几乎除了 TERM 程序以外，没有还在用选中缓冲的程序
+造成 TERM 中选中的，需要鼠标中键才能贴到其它程序里。在贴之前，在其它程序中还不能选中任何东西，一旦选中，选中缓冲就被刷新
+
+a) xterm 功能强大，本身就带剪贴板功能，如下配置即可
+在 $HOME/.Xresources 里如下写，可让 xterm 的复制进入剪贴板，不再过选中缓中
+
+*VT100*translations: #override \n\
+Shift <KeyPress> Insert:insert-selection(CLIPBOARD, CUT_BUFFER1) \n\
+~Shift~Ctrl<Btn2Up>: insert-selection(CLIPBOARD, CUT_BUFFER1) \n\
+~Shift<BtnUp>: select-end(CLIPBOARD, CUT_BUFFER1)
+
+前两句是说当 Shift-Insert 与鼠标中键（Btn2UP）效果是贴出剪贴板内容
+第三句是说当 鼠标左键（BtnUP）效果是复制给剪贴板
+
+这样一来，在 firefox 中任意选中的文字（不 Ctrl-c ），不管是 Shift-Insert 还是鼠标中键都复制不出来了
+
+*VT100*translations: #override \n\
+Shift <KeyPress> Insert:insert-selection(CLIPBOARD, CUT_BUFFER1) \n\
+~Shift~Ctrl<Btn2Up>: insert-selection(PRIMARY, CUT_BUFFER0) \n\
+~Shift<BtnUp>: select-end(CLIPBOARD, CUT_BUFFER1) \n\
+~Shift<BtnUp>: select-end(PRIMARY, CUT_BUFFER0)
+
+这样就让在 firefox 里随意选中的文字，鼠标中键可贴在 TERM 中，而 Ctrl-c 的内容由 Shift-Insert 贴出
+当然配置是灵活的，随自己喜欢了。
+
+b) rxvt, aterm, mrxvt, rxvt-unicode 系列，需要一点小修改
+这一系列都是基于 rxvt 的，代码相近，下面以 rxvt-unicode 为例：
+（无需会编程，不过是替换游戏，把选中缓冲替换为剪贴板）
+
+原理：把选中缓冲（XA_PRIMARY）换成剪贴板（xa[XA_CLIPBOARD]）即可
+vi rxvt-unicode-8.1/src/screen.C
+2895 行：
+if (selnum == Sel_Primary)
+sel = xa[XA_CLIPBOARD];
+else if (selnum == Sel_Secondary)
+sel = XA_SECONDARY;
+else
+sel = XA_PRIMARY;
+
+3066行：
+XSetSelectionOwner (dpy, xa[XA_CLIPBOARD], vt, tm);
+if (XGetSelectionOwner (dpy, xa[XA_CLIPBOARD]) == vt)
+还是等高人做出补丁能象 xterm 那样可配置就好了，爱怎么贴就怎么贴 

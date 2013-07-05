@@ -1,0 +1,79 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2012-12-15T20:51:04+08:00
+
+====== enum枚举类型 ======
+Created 星期六 15 十二月 2012
+
+在实际问题中，有些变量的取值被限定在一个有限的范围内。例如，一个星期内只有七天，一年只有十二个月，一个班每周有六门课程等等。如果把这些量说明为整型，字符型或其它类型显然是不妥当的。为此，C语言提供了一种称为“枚举”的类型。在“枚举”类型的定义中列举出所有可能的取值，被说明为该“枚举”类型的变量取值不能超过定义的范围。应该说明的是，枚举类型是一种基本数据类型，而不是一种构造类型，因为它不能再分解为任何基本类型。
+11.10.1 枚举类型的定义和枚举变量的说明
+1. 枚举的定义枚举类型定义的一般形式为：
+enum 枚举名{ 枚举值表 };
+在枚举值表中应罗列出所有可用值。这些值也称为枚举元素。
+例如：
+
+该枚举名为weekday，枚举值共有7个，即一周中的七天。凡被说明为weekday类型变量的取值只能是七天中的某一天。
+2. 枚举变量的说明
+如同结构和联合一样，枚举变量也可用不同的方式说明，即先定义后说明，同时定义说明或直接说明。
+设有变量a,b,c被说明为上述的weekday，可采用下述任一种方式：
+enum weekday{ sun,mou,tue,wed,thu,fri,sat };
+enum weekday a,b,c;
+或者为：
+enum weekday{ sun,mou,tue,wed,thu,fri,sat }a,b,c;
+或者为：
+enum { sun,mou,tue,wed,thu,fri,sat }a,b,c;
+11.10.2 枚举类型变量的赋值和使用
+枚举类型在使用中有以下规定：
+1. 枚举值是常量，不是变量。不能在程序中用赋值语句再对它赋值。
+例如对枚举weekday的元素再作以下赋值：
+sun=5;
+mon=2;
+sun=mon;
+都是错误的。
+2. 枚举元素本身由系统定义了一个表示序号的数值，从0开始顺序定义为0，1，2…。如在weekday中，sun值为0，mon值为1，…,sat值为6。
+【例11.10】
+main(){
+enum weekday
+{ sun,mon,tue,wed,thu,fri,sat } a,b,c;
+a=sun;
+b=mon;
+c=tue;
+printf("%d,%d,%d",a,b,c);
+}
+
+说明：
+只能把枚举值赋予枚举变量，不能把元素的数值直接赋予枚举变量。如：
+a=sum;
+b=mon;
+是正确的。而：
+a=0;
+b=1;
+是错误的。如一定要把数值赋予枚举变量，则必须用强制类型转换。
+如：
+a=(enum weekday)2;
+其意义是将顺序号为2的枚举元素赋予枚举变量a，相当于：
+a=tue;
+还应该说明的是枚举元素不是字符常量也不是字符串常量，使用时不要加单、双引号。
+【例11.11】
+main(){
+enum body
+{ a,b,c,d } month[31],j;
+int i;
+j=a;
+for(i=1;i<=30;i++){
+month[i]=j;
+j++;
+if (j>d) j=a;
+}
+for(i=1;i<=30;i++){
+switch(month[i])
+{
+case a:printf(" %2d %c\t",i,'a'); break;
+case b:printf(" %2d %c\t",i,'b'); break;
+case c:printf(" %2d %c\t",i,'c'); break;
+case d:printf(" %2d %c\t",i,'d'); break;
+default:break;
+}
+}
+printf("\n");
+}

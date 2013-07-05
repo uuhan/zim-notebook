@@ -1,0 +1,23 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2012-11-06T09:48:56+08:00
+
+====== Arch链接网络 ======
+Created 星期二 06 十一月 2012
+
+[Unit]
+Decription=Network Connectivity
+Wants=network.target
+Before=network.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+EnvironmentFile=/etc/conf.d/network
+ExecStart=/sbin/ifconfig ${interface} up
+ExecStart=/usr/sbin/wpa_supplicant -i ${interface} -c /etc/wpa_supplicant/wpa_supplicant.conf -B
+ExecStart=/sbin/ifconfig ${interface} ${address}/${netmask} 
+ExecStart=/sbin/route add default gw ${gateway}
+
+[Install]
+WantedBy=multi-user.target

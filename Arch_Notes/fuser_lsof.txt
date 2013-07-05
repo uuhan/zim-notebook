@@ -1,0 +1,56 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2012-11-30T19:03:53+08:00
+
+====== fuser lsof ======
+Created 星期五 30 十一月 2012
+
+有许多情况下，我们需要查看一个进程当前打开了哪些文件，反过来我们也希望知道某一个文件正在被哪些进程所读写。在Linux下有许多有用的工具可以帮我们完成这两个工作，下面介绍这两个工具：lsof与fuser。
+
+    fuser find files or sockets' user
+
+    格式：fuser [选项] fname
+
+    -k 如果找到打开文件的进程，则发送SIGKILL杀死此进程，通过-i选项，可以为用户提供交互选择
+
+    -signal 用户可以指定使用何种信号去kill进程，如果-k参数指定，则忽略此参数
+
+    -m 如果指定一个文件，则所有访问那个文件所在文件系统的进程都会被列出来
+
+    -n  type 指定不同的文件类型，默认类型为file，此外还支持tcp和udp类型，此时可以简写作port/tcp
+
+    -u  显示进程属主
+
+    -v  显示详细进程与打开文件信息
+
+    -4/-6 只搜索IPv4/IPv6套接字
+
+    例如，我们想查看端口TCP端口9000由哪个进程打开 fuser -v -u 9000/tcp
+
+             查看哪些进程在访问/home挂载分区              fuser -mv /home
+
+    lsof list open file
+
+    格式：lsof  [选项] [names]
+
+    单独执行lsof将输出系统中所有打开的文件，我们可以grep过滤出我们关心的内容，不过lsof提供了相应的参数帮助我们精确查找
+
+    lsof name 将输出所有使用文件name的进程
+
+    -p pid 列出进程pid所打开的所有文件
+
+    -d FD_pattern 列出所有已经打开的FD值为FD_pattern的文件FD的值有整数，TXT,MEM等等
+
+    -a lsof后可以加多个匹配条件，默认为or连接，此参数将多个条件变成and关系
+
+    -i [46] [proto] [@hostname|ip][:service|port] 用来选择占用某个端口的进程
+
+    +d/+D dir 非递归或递归的显示打开dir下文件的进程
+
+    -c string   显示进程的command中包含string的进程所打开的文件
+
+    -u username 显示属于user的进程所打开的文件
+
+    -g gid
+
+     以上这些参数已经足够用了，上面这两个工具都是读取/proc文件系统中的数据进行工作的。网上有提到借助于lsof的查找功能，可以对一个删除的文件进行恢复，前提是占用这个文件的进程当前还没有关闭。通过被删除的文件，找到对应的进程及在进程中的fd-num，然后通过cat /proc/process-num/fd/fd-num即可恢复被删除的文件。

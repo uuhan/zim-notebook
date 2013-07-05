@@ -1,0 +1,41 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2013-02-16T01:26:02+08:00
+
+====== 进度条 ======
+Created 星期六 16 二月 2013
+
+#!/bin/bash
+i=0
+while [[ $i -le 10000 ]];do
+	for j in '-' '\\' '|' '/'; do
+		tput sc
+		echo -ne "Please waiting ... $j"
+		sleep 0.1
+		tput rc
+	done
+	((i++))
+done
+
+
+
+linux shell 实现进度条  
+
+2011-05-24 00:17:18|  分类： Linux/Unix |字号 订阅
+#!/bin/bash
+let  PERCENT=0
+(
+PERCENT=0
+for i in /etc/*
+do
+    if  [[ $PERCENT  -gt 10 ]];  then
+             break
+    else
+        echo  $I  2>  /dev/null
+        echo  $PERCENT
+    fi
+
+    PERCENT=$(($PERCENT+1))
+    sleep  1
+done
+) | dialog   --title  "进度条...." --gauge  "正在复制中..."  6 50 0

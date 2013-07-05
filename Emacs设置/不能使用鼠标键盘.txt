@@ -1,0 +1,12 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2013-04-02T14:14:19+08:00
+
+====== 不能使用鼠标键盘 ======
+Created 星期二 02 四月 2013
+Section "ServerFlags"
+	Option		"AllowMouseOpenFail" "true"
+	Option		"AutoAddDevices"     "False"
+	Option		"AllowEmptyImput"    "False"
+EndSection
+

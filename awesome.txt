@@ -1,0 +1,134 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2012-12-26T13:26:48+08:00
+
+====== awesome ======
+Created 星期三 26 十二月 2012
+
+awesome中一些常用的程序做个备忘。
+1.屏保 
+  gnome-screensaver-command -l
+
+前提是你在 .Xinitrc中添加
+
+gnome-settings-daemon &
+
+ps。 是我搞错了，不加也行，加上
+
+gnome-screensaver &
+
+就行了。
+2.资源管理器 File manager
+
+thunar
+
+是xfce的file manager，是个轻量级的资源管理器。有时候也会用到gnome-desktop的
+
+nautilus
+
+鹦鹉螺，不过比较大。还有就是mc(midnight commander)也很不错啊。
+
+$ mc
+
+3.pdf
+
+xpdf
+
+也是老牌的pdf查看器，中文支持也没什么问题。不过要是用xpdf自己的open的话，中文目录名和文件名是乱码。还好我是在URxvt下使用，没问题。
+4.calculator
+
+gcalctool
+
+有时要用到计算器,这个是gnome-desktop自带的，要是在emacs中是emacs的也行。
+5.听歌
+
+nyxmms2 play
+
+我用xmms2,觉得还不错。不用多开窗口。
+6.远程桌面
+
+tsclient
+
+这个可以连接windows，使用RDP协议，其本身也支持VNC协议，但是默认好像没有安装。
+7.查看硬件
+
+sudo lshw
+
+这个命令回显示当前的硬件信息。
+8.awesome 自身的命令
+窗口切换，win下的alt+tab
+
+Mod4 + Tab
+
+toggle clinets floating state:
+
+本来是Mod4+Ctrl+Space，我给改了
+
+Mod4+Shift+f
+
+close clients:
+
+Mod4+Shift+c
+
+find window's class and other identifiers
+
+xprop
+
+When the cursor changes to "+" click on the client of interest. From the terminal output you can use the following to match clients in awesome:
+
+WM_CLASS(STRING) = "smplayer", "Smplayer"
+
+   "Smplayer" class
+
+   "smplayer" instance
+
+WM_NAME(STRING) = "SMPlayer"
+
+   "SMPlayer" name
+9.调试rc.lua
+
+$ Xephyr -ac -br -noreset -screen 1152x720 :1 &
+$ DISPLAY=:1.0 awesome -c ~/.config/awesome/rc.lua.new
+
+xephyr是个很好的东东，有时间要好好的学习一下。
+10.查看键盘代码
+
+有的键盘上有很多的快捷键，可是不知道对应的键盘代码是什么，一个查看的办法是：
+
+xev | grep -A2 --line-buffered '^KeyRelease' | sed -n '/keycode /s/^.*keycode \([0-9]*\).* (.*, \(.*\)).*$/\1 \2/p'
+
+会出现一个测试的窗口，在里面敲击键盘吧。Arch wiki的介绍。
+11.关于声音的控制
+
+一直没找到一个好的声音控制的方法，最初是想找到gnome中用的applet，无果。在awesome的wiki上看到obvious，里面有volume_alsa.
+
+使用obvious要注意版本，我的awesome是3.4.3的，用了obvious3.4.7,不行，改用3.4.5,OK。
+
+添加obvious的方法很简单，wiki上就有。添加后会出现一个小耳机形状的图标，默认的鼠标在上面滚轮就可以调节音量，点击是mute。
+
+既然是awesome，号称是键盘控，那就来个键盘的方法。在rc.lua中添加，
+
+awful.key({ }, "F13", function () obvious.volume_alsa.mute(0, "Master") end),
+awful.key({ }, "F14", function () obvious.volume_alsa.lower(0, "Master", 10) end),
+awful.key({ }, "F15", function () obvious.volume_alsa.raise(0, "Master", 10) end)
+
+F13-15,是我本本lenovo sl400的左边几个快捷键，在.xodmaprc中映射成的。
+
+keycode 121 = F13
+keycode 122 = F14
+keycode 123 = F15
+
+12.关于U盘的自动挂载
+
+开始的时候用的是gnome-volume-manager自动挂载的，自动到是自动了，在/media/disk下。不过中文全是乱码。
+
+修改/etc/fstab,添加
+
+#Entry for /dev/sdb1 :
+/dev/sdb1 /media/flashusb auto rw,user,noauto,utf8 0 0
+
+这样的话，每次要手动的挂载，sudo mount sdb1,当然首先要在/media下建flashusb这个文件夹。记得用完要umount阿。
+13.Take a screenshot
+
+gnome-screenshot
+

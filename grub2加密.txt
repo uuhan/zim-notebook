@@ -1,0 +1,293 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2013-05-08T23:24:46+08:00
+
+====== grub2加密 ======
+Created 星期三 08 五月 2013
+
+
+Grub 2 Password Protection
+
+    Introduction
+    How It Works
+    Warnings & Cautions
+    Setup
+    Protecting All Menu Items
+    Examples (PW Protect Windows Recovery)
+    Password Encryption
+    Internal Links
+    External Links
+
+    Introduction to Grub 2 Basic Password Protection 
+    Password protection in Grub 2 is still being developed and its behavior may change in future updates. In this guide, when the term "Grub 2" is used it refers to the version of Grub 2 (grub-pc) available in the main Ubuntu repository. Any time Grub 2 is updated, the user should note whether their password protection is still working as expected.
+    These instructions are primarily for 1.98. Advanced capabilities such as encrypted passwords which have been introduced in Grub 1.98 are still being worked on. Some of the advancements work well while others do not. 
+        This is basic password security. The username/password are unencrypted; anyone having physical access to the machine and more than an elementary knowledge of how Linux works will be able to access the configuration files and bypass this feature. Encrypted password protection is on the horizon and available in an experimental version of Grub 2 (see "The Future" section below).
+        Grub 2 can set password protection on specific menuentries and for specific users. For example, "John" can access Ubuntu but not the Windows recovery mode, which is only accessible by "Bill", the superuser.
+        Automatic password protection has not yet been automated. Menuentries must be identified manually by editing the Grub 2 /etc/grub.d/ scripts such as 10_linux and 30_os-prober.
+        If password protection is enabled, even if for only one entry, and even if not for the superuser, the superuser name and password are required to gain access to the Grub 2 command line and menu-editing modes.
+        The username and/or password do not have to be the same as the Ubuntu logon name/password.
+
+    How It Works
+        To enable basic password protection, the user/administrator must add a superuser (and other users if desired) and password(s) to the /etc/grub.d/00_header file and manually designate which menuentries require a password in the /etc/grub.d/ files. 
+        The Grub 2 menu can include both password-protected and non-protected entries.
+        Once the password feature is enabled the Grub 2 menu will appear as it does normally. When a selection requiring a password is required, the user will be prompted to enter the correct username and password. If entered correctly, the selected menuentry will continue to boot. If incorrect, the user will be returned to the Grub 2 menu.
+        If Grub 2 is set up to boot directly to a password-protected menuentry without displaying a menu, the username/password prompt will appear and booting will not occur until they are correctly entered.
+        Here is a sample menu with passwords enabled, provided by one of the Grub 2 developers:
+        Quote:
+        set superusers="user1"
+        password user1 password1
+        password user2 password2
+
+        menuentry "GNU/Linux" {
+        set root=(hd0,1)
+        linux /vmlinuz
+        }
+
+        menuentry "Windows" --users user2 {
+        set root=(hd0,2)
+        chainloader +1
+        }
+            user1 is the designated superuser. This user can boot any menuentry, edit items in the Grub 2 menu during boot, and use the Grub 2 command line.
+            Anyone can boot GNU/Linux
+            Only user2 and the superuser can boot Windows in this example.
+
+    Warnings & Cautions 
+        Errors in creating a password-protected Grub 2 menu may result in an unbootable system. To restore a system with broken passwords, access and edit the Grub 2 configuration files using the LiveCD or another OS.
+        If password protection is enabled, only the designated superuser can edit a Grub 2 menu item by pressing "e" or use the command line by pressing "c".
+        Caution: If Grub 2 is set up to boot automatically to a password-protected menuentry the user has no option to back out of the password prompt to select another menuentry. Holding the SHIFT key will not display the menu in this case. The user must enter the correct username and password. If unable, the configuration files will have to be edited via the LiveCD or other means to fix the problem. 
+
+    Setting Up Password Protection 
+    There are three steps to enabling Grub 2 password protection. The user must set up the authorized users, designate the password(s), and identify the password-protected menuentries in the /etc/grub.d/ scripts.
+
+        Superuser & Password Designation (Required)
+        A superuser must be designated. This superuser can access any menuentry, edit the menuentries in the Grub 2 menu by pressing "e", or invoke the Grub 2 command line mode.
+
+            Add the following the bottom of /etc/grub.d/00_header
+            Quote:
+            cat << EOF
+            set superusers="user1"
+            password user1 password1
+            EOF
+            Example: 
+            Quote:
+            cat << EOF
+            set superusers="superman"
+            password superman 1234
+            EOF
+
+        Other Users (Optional)
+        Other users can be identified and given a password. A designated user can access unprotected and his/her own menuentries. 
+
+            Add the following the bottom of /etc/grub.d/00_header
+            Quote:
+            cat << EOF
+            set superusers="user1"
+            password user1 password1
+            password user2 password2
+            EOF
+            Example: 
+            Quote:
+            cat << EOF
+            set superusers="superman"
+            password superman 1234
+            password bill 5678
+            EOF
+
+        Designating Menuentries for Password Protection
+        Once the superuser/other users and their password(s) are established, the entries to be protected must be identified. Currently Grub 2 adds no password protection to any entries upon establishment of a superuser and password in /etc/grub.d/00_header. (Note: This may change. See "The Future" section below.) Each menuentry must be identified and modified.
+
+        Scripts can be used to tailor entries for specific menuentries. See the "Scripts" section for examples. The remainder of this section will explain how to change the main script files in /etc/grub.d/ to set up password protection for entire classes of menuentries (Linux on the main partition, OSs on other partitions, memtest86+, etc). Remember that editing the/boot/grub/grub.cfg file directly is discouraged.
+
+        For protecting specific menuentries, another option is to add entries to the  /etc/grub.d/40_custom file and disable the applicable script file in the same folder. For example, copy the Windows entries from /boot/grub/grub.cfg to 40_custom, add "--users user1" to the desired entry (such as the Windows recovery partition) and then remove the executable bit from/etc/grub.d/30_os-prober.
+
+            Password protect all Linux kernels on the main partition: /etc/grub.d/10_linux:
+
+            From newer Grub2 versions (1.98-1ubuntu5)(approximately line 74):
+            Quote:
+            printf "menuentry '${title}' ${CLASS} {\n" "${os}" "${version}" {
+            To allow the superuser only:
+            Quote:
+            printf "menuentry --users user1 '${title}' ${CLASS} {\n" "${os}" "${version}" {
+            Example to permit access by only the superuser (superman):
+            Quote:
+            printf "menuentry --users superman '${title}' ${CLASS} {\n" "${os}" "${version}" {
+            Example to permit access by the superuser (superman) and bill (Note, for multiple users, separate the names with a comma - bill,john,jill):
+            Quote:
+            printf "menuentry --users bill '${title}' ${CLASS} {\n" "${os}" "${version}" {
+            From older Grub2 versions (approximately line 59):
+            Quote:
+            menuentry "$1" {
+            To allow the superuser only:
+            Quote:
+            menuentry "$1" --users user1 {
+            Example to permit access by only the superuser (superman):
+            Quote:
+            menuentry "$1" --users superman {
+            Example to permit access by the superuser (superman) and bill:
+            Quote:
+            menuentry "$1" --users bill {
+
+
+            Password protect the Recovery Mode option: /etc/grub.d/10_linux Also make the change as described in the /etc/grub.d/00_header section above. 
+            From (GNU GRUB 1.98-1ubuntu5):
+            Quote:
+            printf "menuentry '${title}' ${CLASS} {\n" "${os}" "${version}"
+            To:
+            Quote:
+            if ${recovery} ; then
+            printf "menuentry '${title}' --users user1 ${CLASS} {\n" "${os}" "${version}"
+            else
+            printf "menuentry '${title}' ${CLASS} {\n" "${os}" "${version}"
+            fi
+            Password protect the memtest86+ option: /etc/grub.d/20_memtest[/B] . Also make the change as described in the /etc/grub.d/00_header section above. 
+            Quote:
+            menuentry "Memory test (memtest86+)" --users superman {
+            Additional memtest86+ entries (from other partitions) may also be located in this file. The line will start with "menuentry". Change these lines as desired.
+
+            Password protect kernels/operating systems on other partitions: /etc/grub.d/30_os-prober. Also make the change(s) as described in the /etc/grub.d/00_header section above. 
+
+            Linux entries on other partitions:
+            Quote:
+            menuentry "${LLABEL} (on ${DEVICE})" --users superman {
+            Other Operating Systems, including Windows:
+            Quote:
+            menuentry "${LONGNAME} (on ${DEVICE})" --users superman {
+            OSX entries (in the macosx) section:
+            Quote:
+            menuentry "${LONGNAME} (on ${DEVICE})" --users superman {
+        Save the files, run "sudo update-grub", and reboot.
+
+    Protecting All Entries
+    Grub 2 password protection is still evolving. Currently password protection must be assigned to each menuentry. Protecting the entire menu from editing can be accomplished by adding the superuser and password without designating a specific menuentry. 
+
+    For now, there is no automatic method in Grub 2 to password-protect every menu item. At some point it is expected that this feature will be incorporated in grub-mkconfig. For now this can be accomplished by running the following command(s). 
+
+    Before rebooting make sure you have added the "superuser" and password to  etc/grub.d/00_header and inspect /boot/grub/grub.cfg to ensure you achieved the desired results. 
+
+    Notes:
+        The way Grub 2 assigns password protection may change. Currently the default is for menuentries to be unlocked. The developers are considering making the passwords mandatory for all entries once a superuser is designated. The superuser would then be able to unlock entries. If this feature is incorporated in the Ubuntu version of Grub 2 I will update these instructions.
+        The first two ccommands make backups of the files to be modified.
+        filename(s) should be replaced by the specific script file names you wish to change. These files are located in /etc/grub.d/ and include 10_linux, 20_memtest86+, and 30_os-prober. You can include one or more in the commands.
+
+    Code:
+
+
+
+    sudo mkdir /etc/grub.d.backup
+    sudo cp /etc/grub.d/* /etc/grub.d.backup
+    sudo sed -i -e '/^menuentry /s/ {/ --users user1 {/' filename(s)
+
+
+    Example:
+    Code:
+
+
+
+    sudo sed -i -e '/^menuentry /s/ {/ --users superman {/' /etc/grub.d/10_linux  /etc/grub.d/20_memtest86+ /etc/grub.d/30_os-prober /etc/grub.d/40_custom
+
+
+    To undo the previous command, run:
+    Code:
+
+
+
+    sudo sed -i -e '/^menuentry /s/ --users user1 {/ {/' filename(s)
+
+
+    Example:
+    Code:
+
+
+
+    sudo sed -i -e '/^menuentry /s/ --users superman[/B] {/ {/' /etc/grub.d/10_linux  /etc/grub.d/20_memtest86+ /etc/grub.d/30_os-prober /etc/grub.d/40_custom
+
+
+    Save the files, run "sudo update-grub", and reboot. At the Grub 2 menu, you will be presented with the normal menu. When you make a selection, a prompt will ask for the username and password. 
+
+    Examples
+
+        Password Protect the Windows Recovery Partition
+
+        Note: See the  Grub 2 Title Tweaks thread if you want to remove the Windows Recovery option from the menu entirely.
+            Determine the Windows Recovery partition (sda1, sda2, etc).
+            Add the desired username and password as described in Section 4A and 4B to /etc/grub.d/00_header.
+            Open /etc/grub.d/30_os-prober for editing:
+            Code:
+
+
+
+            cd /etc/grub.d/
+            sudo cp 30_os-prober 30_os-prober.bak # Make a backup copy
+            sudo chmod -x 30_os-prober.bak        # Remove executable bit
+            gksu gedit 30_os-prober &
+
+
+            Change the following (approximately line 100)
+            From:
+            Quote:
+            cat << EOF
+            menuentry "${LONGNAME} (on ${DEVICE})" {
+            EOF
+            To:
+            Quote:
+            if [ ${DEVICE} = "/dev/sdXY" ]; then
+            cat << EOF
+            menuentry "${LONGNAME} (on ${DEVICE})" --users user1 {
+            EOF
+            else
+            cat << EOF
+            menuentry "${LONGNAME} (on ${DEVICE})" {
+            EOF
+            fi
+            Example setting protection on sda2 for user superman:
+            Quote:
+            if [ ${DEVICE} = "/dev/sda2" ]; then
+            cat << EOF
+            menuentry "${LONGNAME} (on ${DEVICE})" --users superman {
+            EOF
+            else
+            cat << EOF
+            menuentry "${LONGNAME} (on ${DEVICE})" {
+            EOF
+            fi
+            Save the file, then run:
+            Code:
+
+
+
+            sudo update-grub
+
+
+            You can use the same concept on other menuentries. Rather than using the partition designation {DEVICE}, you could use other unique identifying variables, such as . The title variable depends on the operating system. Examples include {LONGNAME} or {LLABEL}. 
+
+            My thread on  Grub 2 Title Tweaks may give you some ideas of how to alter the basic scripts to suit your needs.
+
+    Password Encryption
+        Encrypted password protection using PBKDF2 is available but for me still a bit buggy in Lucid (Grub 1.9. If you are going to experiment with encrypted passwords, make sure you have at least one good non-password protected menuentry to boot or you may not be able to log on if you encounter problems. To generate an encrypted password:
+            Code:
+
+
+
+            grub-mkpasswd_pbkdf2
+
+
+            The format for an encrypted password entry in /etc/grub.d/00_header would look similar to:
+                Quote:
+                set superusers="drs305"
+                password_pbkdf2 drs305 <some really long alphanumeric entry generated from the grub-mkpasswd-pbkdf2 command>
+        Note: I have been able to get the password function to work in Grub 1.98-20100128 only by using the console mode. With the default gfxmenu mode I have been experiencing hang-ups at the Grub 2 menu. I recently filed this bug report.
+            To enable the console mode, use this line in /etc/default/grub: GRUB_TERMINAL=console
+
+    Internal Links by the Author 
+    Grub 2 Title Tweaks 
+    Grub 2 Basics
+    Grub 2 Common Tasks
+
+    External Links 
+    Grub Wiki:Authentication
+    Felix Ziecle's Experimental Grub PPA
+    Grub 2 Community Doc
+
+__________________
+GRUB2 : Tweaks : Basics : Tasks : ISO : Remove Kernels : PW : Chroot : ISO-Install : Customizer
+Last edited by drs305; December 24th, 2010 at 08:32 AM.. Reason: Update for GNU Grub 1.98-1ubuntu5 & add Recovery Mode password

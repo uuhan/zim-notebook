@@ -1,0 +1,7 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2012-12-17T22:29:19+08:00
+
+====== Gentoo问题 ======
+Created 星期一 17 十二月 2012
+

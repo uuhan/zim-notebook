@@ -1,0 +1,295 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2012-12-14T15:22:17+08:00
+
+====== 括号 ======
+Created 星期五 14 十二月 2012
+
+bash语法并没有什么复杂，但是里面很多用法严格苛刻到离谱的符号用法却让很多人学了就忘。可是这是有历史原因的，可以说，shell脚本是其他很多脚本的鼻祖。
+本文以现今最流行的bash shell作为平台，例举并分类了应用中经常碰到的括号。相信熟练掌握这些括号之后，离shell大师又走进了一步。希望读者能够学有所获！
+一、括号与bash语句
+1.子语句
+
+(list)
+list将在一个子shell中被执行,不会对当前shell产生影响
+返回list的exit值
+
+{ list; }
+list前后必须有空格
+可以作组合命令用
+list将在当前shell中被执行
+list结尾处必须要有新行或’;'号
+返回list的exit值
+2.用花括号进行枚举
+
+{list} 用于枚举
+如touch {a,b,c}将创建3个文件
+3. ((expression))
+
+算术表达式求值
+如((p=p+1))，不需要$符号
+echo $((3+2)) 将输出5
+echo $((p++))
+算术比较
+((1>2)) 比较大小
+((1==1)) 比较是否相等（注意使用双等号）
+(($p<=5))
+4.小括号与花括号一起使用，构成函数
+
+f(){…} 函数
+函数名前没有返回类型，括号中也没有参数
+参数通过$0..n传入
+举例：
+
+die()
+{
+    m=$1
+    echo $m
+    exit
+}
+
+二、中括号——强大的条件测试工具
+
+1.旧版本 [ condition ]
+condition 前后必须有空格（因为符号[是一个命令）
+变量名前$符号不可省略
+1.什么时候判断为false？
+
+[ ] NULL为false
+[ $x ] 未声明或未初始化的变量x为false
+注意：
+未声明是指上文中从未出现的变量
+未初始化是指出现但是没有赋值的变量
+初始化为NULL
+x=
+x=”"
+[ $x ] 初始化为NULL的变量为false
+反例：
+[ x ] 这里x是字符串，判断为true
+2.“非”运算符！
+
+非运算符可以在中括号内，中括号外，甚至与其他语句一起使用。
+
+if [ ! -r "$file" ] ; then 
+    die "$file is unreadable."
+fi
+
+将非运算放到中括号外效果一样，如
+
+if ! [ -r "$file" ]
+
+也可以和其他语句一起使用，如grep，用于判断是否存在指定行：
+
+if ! grep "^email=*" "$file" > /dev/null; then
+    die "Please edit $file and setup email address"
+fi
+
+3.文件测试
+
+-e 文件存在
+-f 表示这个文件是一个一般文件(并不是目录或者设备文件)
+-s 文件大小size>0
+-d 表示这是一个目录
+-b 表示这是一个块设备(软盘, 光驱, 等等.)
+-c 表示这是一个字符设备(键盘, modem, 声卡, 等等.)
+-p 这个文件是一个管道
+-L 这是一个符号链接
+-S 表示这是一个socket
+
+-r 运行这个测试命令的用户是否具有读权限
+-w 运行这个测试命令的用户是否具有写权限
+-x 运行这个测试命令的用户是否具有可执行权限
+
+-u set-user-id (suid)标记被设置到文件上
+-g set-group-id(sgid)标记被设置到文件或目录上
+-k 设置粘贴位sticky
+
+-O 判断你是否是文件的拥有者
+-G 文件的group-id是否与你的相同
+-N 从文件上一次被读取到现在为止, 文件是否被修改过
+f1 -nt f2 文件f1比文件f2新
+f1 -ot f2 文件f1比文件f2旧
+f1 -ef f2 文件f1和文件f2是相同文件的硬链接
+4.字符串测试
+
+= 等于
+
+== 等于 与=等价 ==
+!= 不等号
+-z 字符串为”zero”（字符串不存在）
+-n 字符串为non-zero（字符串存在）
+< 小于, 按照ASCII字符进行排序
+> 大于, 按照ASCII字符进行排序
+if [[ "$a" > "$b" ]]
+if [ "$a" \> "$b" ]
+注意“>”使用在[ ]结构中的时候需要被转义.
+5.算术测试
+
+-eq 等于
+-ne 不等于
+-gt 大于
+-ge 大于等于
+-lt 小于
+-le 小于等于
+6.举例
+
+变量存在时执行：
+
+if [ "$p" ] ; then
+	expression
+elif [ condition ]; then
+	expression
+else
+	expression
+fi
+
+更为简单的形式：
+
+[ "$p" ] && echo "$p existed"
+可以写成更为规范的形式：
+[ -n "$p" ] && echo "$p existed"
+
+变量不存在时执行：
+
+[ "$1" ] || echo "$1 non-existed" 
+更为规范的形式：
+[ -n "$1" ] || echo "$1 non-existed" 
+[ -z "$1" ] && echo "$1 non-existed" 
+
+获取参数
+
+while [ $# -gt 0 ]; do
+    case "$1" in  
+    -e )
+        arg1=$1
+        shift ;;
+
+    # errors
+	* ) break ;;
+    esac
+shift
+done
+
+2.新版本 [[ condition ]]
+condition 前后必须有空格
+[[是一个关键字, 并不是一个命令
+在版本2.02的Bash中, 引入了[[ ... ]]扩展测试命令
+比较运算符为<, >, =（注意不是 == ）
+比较运算符前后必须有空格
+举例：
+
+[[ $a < $b ]] && echo b  比较变量的大小（可以是数字或字符串）
+[[ a < b ]] && echo b 比较字符串的大小（显然a<b成立）
+[[ $a = $b ]] 判断这两个变量是否相等（注意只要一个等号）
+
+三、花括号与变量
+
+要引用一个变量，有两种方式：
+$var
+${var}
+它们两者是等价的。第二种形式使得bash对变量名有更多修饰的机会。下面将对此展开讨论。
+1.条件变量
+
+以下表达式中p是变量名，word是字符串
+${p:-word}如果变量p不存在，返回”word”
+${p:=word}如果变量p不存在，返回”word”，并将p的值设为”word”
+${p:?word}如果变量p不存在，将”word”打入STDERR
+${p:+word}如果变量p存在，返回”word”
+2.子字符串
+
+export p=”hello”
+${p:2}返回llo
+${p:2:1}返回l
+${#p}返回p的长度5
+3.截取字符串
+
+${p#pattern}返回p开头删除pattern后的字符串，非贪婪模式
+${p##pattern}返回p开头删除pattern后的字符串，贪婪模式
+${p%pattern}返回p结尾删除pattern后的字符串，非贪婪模式
+${p%%pattern}返回p结尾删除pattern后的字符串，贪婪模式
+
+举例：
+
+$ echo $p
+hellollollo
+$ echo ${p%llo*}
+hellollo
+$ echo ${p%%llo*}
+he
+
+$ echo $p
+lolololvictory
+$ echo ${p#*o}
+lololvictory
+$ echo ${p##*o}
+ry
+
+下面是一个提取email中username的脚本，它还展示了如何从文件读取email列表
+
+export file="email"
+cat "$file" | while read line; do
+    username=${line%@*}
+    touch $username
+done
+
+4.字符串替换
+
+${p/pattern/word}用”word”替换pattern，pattern前可加#或%，表开头或结尾
+${p//pattern/word}用”word”替换所有pattern，pattern前可加#或%，表开头或结尾
+举例：
+
+$ export p="hello"
+
+$ echo ${p//l/a}
+heaao
+
+$ echo $p
+hello
+
+注意，这只影响输出，但是不改变变量固有的值
+如果希望将某个文件中的所有模式%NAME%替换成指定变量$name则可以使用sed工具：
+
+sed "s/%NAME%/$name/g" "$file" > ${name}
+
+5.二重参数
+
+export p=HOME
+${!p}等价于$HOME
+${!p*}返回所有以p开头的变量名
+举例：
+
+$ echo ${!P*}
+PATH PIPESTATUS PPID PS1 PS2 PS4 PWD
+(list)
+    list将在一个子shell中被执行, 不会对当前shell产生影响
+    返回list的exit值
+
+{ list; }
+    可以作组合命令用
+    list将在当前shell中被执行
+    list结尾处必须要有新行或';'号
+    返回list的exit值
+    list前后必须有空格
+
+((expression))
+    算术计算
+
+${!p} 二重参数
+${!p*} 返回所有以p开头的变量
+${p:-word} 如果变量p不存在，返回"word"
+${p:=word} 如果变量p不存在，返回"word"，并将p的值设为"word"
+${p:?word} 如果变量p不存在，将"word"打入STDERR
+${p:+word} 如果变量p存在，返回"word"
+${p:2}  子串
+${p:2:3} 子串
+${p#pattern} 返回p开头删除pattern后的字符串，非贪婪模式
+${p##pattern} 返回p开头删除pattern后的字符串，贪婪模式
+${p%pattern} 返回p结尾删除pattern后的字符串，非贪婪模式
+${p%%pattern} 返回p结尾删除pattern后的字符串，贪婪模式
+${p/pattern/word} 用"word"替换pattern，pattern前可加#或%，表开头或结尾
+${p//pattern/word} 用"word"替换所有pattern，pattern前可加#或%，表开头或结尾
+
+${<file} 返回文件内容 
+
+$((expression)) 返回数学表达式的值
+${ list; } 返回命令执行之输出

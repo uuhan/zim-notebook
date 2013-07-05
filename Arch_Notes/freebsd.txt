@@ -1,0 +1,54 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2012-12-03T00:28:01+08:00
+
+====== freebsd ======
+Created 星期一 03 十二月 2012
+
+　pkg_add安装软件是用缺省的环境变量
+
+　　 PACKAGESITE
+
+　　来抓包的，
+
+　　因为FreeBSD分三个分支：
+
+　　current版本： 表示这是最新版本，拥有最新的技术，但不是最稳定的
+
+　　stable版本： 表示这是稳定版本，你可以放心使用，但里面的技术可能不是最新的，对新硬件的支持也不一定包含支持。
+
+　　release版本： 这是一个二进制发行版本，实际上离stable不远，可放心使用。
+
+　　如果你安装的是release,当你想用pkg_add来抓包时，它会缺省连接到：
+
+　　ftp.freebsd.org/pub/FreeBSD/ports/i386/packages-6.2-release/Latest/
+
+　　里抓包。这些包的版本与6.2-release光盘里的软件版本是一样的，个人认为在缺省情况下用pkg_add并不会得到最新版本。如果你想尝试最新技术或最稳定版本的软件时，你可以把PACKAGESITEP 这个环境变量修改， 想知道详细信息，可到
+
+　　 ftp.freebsd.org
+
+　　里寻找。
+
+　　记住，你第一次安装系统时要用最小化安装，这已包括了完整的编译系统各安全性于一体的全部文件。安装后要记得配置网络让它启动（我就这样，没有配置网络就用它来抓包，搞得自己认为是自己电脑不行，又重装了系统，后来想了下，原来是自己的网络还没配置，那又怎能上网呢，怎能连外网呢？？）搞定这些后你就可用 pkg_add来安装自己喜欢的软件了。我个人认为pkg_add 比 ports tree 的安装在快捷些，不过ports的好处是可以不断更新，而pkg_add只局限于某个已固定的版本（除非管理员每天都在更新ftp里的软件版本）
+
+　　 如安装xorg7.2，用以下的方法：
+
+　　 1) setenv PACKAGESITE 'ftp://ftp.freebsd.org/pub/FreeBSD/ports/i386/packages-6-stable/Latest/'
+
+　　 2) pkg_add -r xorg
+
+　　 请记住，该环境变量只能在本次上机后使用，重启后它就会恢复为原本的缺省值了
+
+　　 这样你就可以用你　ftp.freebsd.org/pub/FreeBSD/ports/i386/packages-6-stable/Latest/
+
+　　 如果想让它一直保持某个版本，你可以这样做：
+
+　　 在你使用的SH的配置文件里加入：(我的用的CSH，所以就用$HOME/.cshrc写入，一般都是在/root/.cshrc里写的，因为安装软件都得用root来安装的)
+
+　　setenv PACKAGESITE　　　　　　　　　　　　　　 ftp://ftp.cn.freebsd.org/pub/FreeBSD/ports/i386/packages-6-stable/Latest/
+
+　　这样，ftp.freebsd.org/pub/FreeBSD/ports/i386/packages-6-stable/Latest/ 就成了你抓包的永久性网址了，
+
+　　你每次用pkg_add 来安装软件时它都会采用这个网址了。
+
+　　有网上有很多关于这些的不同的方法，而我是用这个来安装package的

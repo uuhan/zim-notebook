@@ -1,0 +1,8 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2012-11-07T21:23:05+08:00
+
+====== X ======
+Created 星期三 07 十一月 2012
+
+xorg-server xorg-xinit xorg-utils xorg-server-utils mesa mesa-demos dbus xorg-twm xorg-xclodk xterm xf86-video-XXXX

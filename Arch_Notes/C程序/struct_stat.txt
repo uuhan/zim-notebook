@@ -1,0 +1,499 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2012-12-29T01:22:06+08:00
+
+====== struct stat ======
+Created 星期六 29 十二月 2012
+
+
+struct stat结构体的详解和用法
+分类： Linux 2011-07-15 19:29 1609人阅读 评论(1) 收藏 举报
+
+[cpp] view plaincopy
+
+    //! 需要包含de头文件  
+      
+    #include <sys/types.h>  
+      
+    #include <sys/stat.h>   
+      
+    int stat(const char *filename, struct stat *buf); //! prototype,原型   
+      
+    struct stat  
+    {  
+      
+        dev_t       st_dev;     /* ID of device containing file -文件所在设备的ID*/  
+      
+        ino_t       st_ino;     /* inode number -inode节点号*/  
+      
+        mode_t      st_mode;    /* protection -保护模式?*/  
+      
+        nlink_t     st_nlink;   /* number of hard links -链向此文件的连接数(硬连接)*/  
+      
+        uid_t       st_uid;     /* user ID of owner -user id*/  
+      
+        gid_t       st_gid;     /* group ID of owner - group id*/  
+      
+        dev_t       st_rdev;    /* device ID (if special file) -设备号，针对设备文件*/  
+      
+        off_t       st_size;    /* total size, in bytes -文件大小，字节为单位*/  
+      
+        blksize_t   st_blksize; /* blocksize for filesystem I/O -系统块的大小*/  
+      
+        blkcnt_t    st_blocks;  /* number of blocks allocated -文件所占块数*/  
+      
+        time_t      st_atime;   /* time of last access -最近存取时间*/  
+      
+        time_t      st_mtime;   /* time of last modification -最近修改时间*/  
+      
+        time_t      st_ctime;   /* time of last status change - */  
+      
+    };  
+
+[cpp] view plaincopy
+
+    #include <iostream>  
+      
+    #include <ctime>  
+      
+    #include <sys/types.h>  
+      
+    #include <sys/stat.h>   
+      
+    using namespace std;   
+      
+    int  
+    main ()  
+    {  
+        struct stat buf;  
+      
+        int result;  
+      
+        result = stat ("./Makefile", &buf);  
+      
+        if (result != 0)  
+          {  
+              perror ("Failed ^_^");  
+          }  
+        else  
+          {  
+      
+              //! 文件的大小，字节为单位  
+      
+              cout << "size of the file in bytes: " << buf.st_size << endl;  
+      
+              //! 文件创建的时间  
+      
+              cout << "time of creation of the file: " << ctime (&buf.st_ctime) <<  
+      
+                  endl;  
+      
+              //! 最近一次修改的时间  
+      
+              cout << "time of last modification of the file: " <<  
+      
+                  ctime (&buf.st_mtime) << endl;  
+      
+              //! 最近一次访问的时间  
+      
+              cout << "time of last access of the file: " << ctime (&buf.st_atime)  
+      
+                  << endl;  
+          }  
+      
+        return 0;  
+      
+    }  
+
+[cpp] view plaincopy
+
+    $ ./test  
+      
+    size of the file in bytes: 36  
+      
+    time of creation of the file: Sun May 24 18:38:10 2009  
+      
+    time of last modification of the file: Sun May 24 18:38:10 2009  
+      
+    time of last access of the file: Sun May 24 18:38:13 2009  
+
+
+
+#include <stdio.h>
+      #include      <stdlib.h>    //exit()
+      #include      <string.h>    //strerror()
+      #include      <errno.h>     //errno
+      #include      <sys/types.h> //stat()
+      #include      <sys/stat.h>
+     
+      int      main(int argc, char * argv[])
+      {
+               char *filename;
+               struct stat buf;
+     
+               if (argc != 2) {
+                   printf("Please input filename\n");
+                   exit(-1);
+               }
+               filename = argv[1];
+               if (stat(filename, &buf) < 0) {
+                   printf("Mesg: %s\n", strerror(errno));
+                   exit(-1);
+               }
+               printf("%s's size      is %-4d      bytes\n", filename, buf.st_size);
+               printf("%s's t_blksize is %-4d bytes\n", filename,      buf.st_blksize);
+               printf("%s's blocks    is %-4d blocks\n",      filename, buf.st_blocks);
+      }
+     
+      ----------------------------------------------------
+      $ gcc test.c
+      $ ./a.out zengxiaolong
+      zengxiaolong's size      is      13   bytes
+      zengxiaolong's t_blksize is 4096 bytes
+      zengxiaolong's blocks    is      8    blocks
+      注: 文件zengxiaolong的实际内容为13个字节，占用4KB大小的磁盘空间(1      blocks -- 一块为4KB)
+     
+     
+     
+     
+      stat, fstat, lstat - get file status
+      ----------------------------------------------------
+          #include <sys/types.h>
+          #include <sys/stat.h>
+          #include <unistd.h>
+     
+          int stat (const char *path, struct stat      *buf);
+          int      fstat(int      filedes, struct stat *buf);
+          int lstat(const char *path, struct stat      *buf);
+     
+          lstat函数与stat类似，但是当文件是一个符号连接时，lstat返回该符号连接的有关信息，而不是由该符号连接引用的文件的信息。
+     
+     
+      struct--stat
+      ----------------------------------------------------
+      struct stat {
+          mode_t         st_mode;    // file type & mode(permissions)
+          ino_t          st_ino;     // i-node number(serial number)
+          dev_t          st_dev;     // device number(filesystem)
+          dev_t          st_rdev;    // device number for specials files
+          nlink_t   st_nlink;        // number of links
+          uid_t          st_uid;     // user ID of owner
+          gid_t          st_gid;     // group ID of owner
+          off_t          st_size;    // size in bytes, for regular files
+          time_t         st_atime;   // time of last access
+          time_t         st_mtime;   // time of last modification
+          time_t         st_ctime;   // time of last file status change
+          long           st_blksize; // best I/O block size
+          long           st_blocks; -// number of      512-byte blocks allocated
+      };
+     
+     
+     
+      struct--inode
+      ----------------------------------------------------
+      /usr/src/linux/include/linux/fs.h
+      struct inode {
+          struct hlist_node    -----------i_hash;
+          struct list_head    ------------i_list;
+          struct list_head    ------------i_sb_list;
+          struct list_head           ----------i_dentry;
+          unsigned      long         ----------i_ino;
+               atomic_t                   ----------i_count;
+               umode_t           --------------i_mode;
+          unsigned      int                         i_nlink;
+               uid_t                  --------------i_uid;
+               gid_t                  --------------i_gid;
+          dev_t                 --------------i_rdev;
+               loff_t           --------------      i_size;
+          struct timespec                      i_atime;
+          struct timespec            ----------i_mtime;
+          struct timespec            ----------i_ctime;
+          unsigned      int          ----------i_blkbits;
+          unsigned long            ------------i_version;
+               blkcnt_t          --------------i_blocks;
+          unsigned short    --------------i_bytes;
+               spinlock_t            ----------i_lock;     
+          struct      mutex                         i_mutex;
+          struct      rw_semaphore                  i_alloc_sem;
+          struct      inode_operations         *i_op;
+          const struct file_operations         *i_fop;
+          struct      super_block                   *i_sb;
+          struct      file_lock                     *i_flock;
+          struct      address_space                 *i_mapping;
+          struct      address_space                 i_data;
+      #ifdef CONFIG_QUOTA
+          struct      dquot                         *i_dquot[MAXQUOTAS];
+      #endif
+          struct      list_head                     i_devices;
+          union {
+              struct      pipe_inode_info      *i_pipe;
+              struct      block_device         *i_bdev;
+              struct      cdev                      *i_cdev;
+          };
+               int                                  i_cindex;   
+               __u32                                i_generation;   
+      #ifdef CONFIG_DNOTIFY
+          unsigned      long                        i_dnotify_mask;
+          struct      dnotify_struct                *i_dnotify;
+      #endif
+         
+      #ifdef CONFIG_INOTIFY
+          struct      list_head                     inotify_watches;
+          struct      mutex                         inotify_mutex;
+      #endif
+          unsigned      long                        i_state;
+          unsigned      long                        dirtied_when;
+          unsigned      int                         i_flags;
+               atomic_t                             i_writecount;
+      #ifdef CONFIG_SECURITY
+               void                                 *i_security;
+      #endif
+               void                                 *i_private;
+      #ifdef __NEED_I_SIZE_ORDERED
+               seqcount_t                           i_size_seqcount;
+      #endif
+      };
+     
+     
+     
+      struct--stat
+      ----------------------------------------------------
+      /usr/src/linux/include/asm-i386/stat.h
+      struct stat {
+          unsigned long --st_dev;
+          unsigned long --st_ino;
+          unsigned short -st_mode;
+          unsigned short -st_nlink;
+          unsigned short -st_uid;
+          unsigned short -st_gid;
+          unsigned long --st_rdev;
+          unsigned long --st_size;
+          unsigned long --st_blksize;
+          unsigned long --st_blocks;
+          unsigned long --st_atime;
+          unsigned long --st_atime_nsec;
+          unsigned long --st_mtime;
+          unsigned long --st_mtime_nsec;
+          unsigned long --st_ctime;
+          unsigned long --st_ctime_nsec;
+          unsigned long --__unused4;
+          unsigned long --__unused5;
+      };
+
+ 
+
+ 
+
+ 
+
+struct stat
+{
+    dev_t       st_dev;     /* ID of device containing file -文件所在设备的ID*/
+    ino_t       st_ino;     /* inode number -inode节点号*/
+    mode_t      st_mode;    /* protection -保护模式?*/
+    nlink_t     st_nlink;   /* number of hard links -链向此文件的连接数(硬连接)*/
+    uid_t       st_uid;     /* user ID of owner -user id*/
+    gid_t       st_gid;     /* group ID of owner - group id*/
+    dev_t       st_rdev;    /* device ID (if special file) -设备号，针对设备文件*/
+    off_t       st_size;    /* total size, in bytes -文件大小，字节为单位*/
+    blksize_t   st_blksize; /* blocksize for filesystem I/O -系统块的大小*/
+    blkcnt_t    st_blocks;  /* number of blocks allocated -文件所占块数*/
+time_t st_atime; /* time of last access -文件数据的最后访问时间 eg:read*/
+    time_t      st_mtime;   /* time of last modification -文件数据的最后修改时间 eg:write*/
+    time_t      st_ctime;   /* time of last status change -i节点状态的最后更改时间 eg:chmod chown*/
+};
+
+
+
+struct stat
+
+stat，lstat，fstat1 函数都是获取文件（普通文件，目录，管道，socket，字符，块（）的属性。函数原型#include <sys/stat.h>
+int stat(const char *restrict pathname, struct stat *restrict buf);提供文件名字，获取文件对应属性。
+int fstat(int filedes, struct stat *buf);通过文件描述符获取文件对应的属性。
+int lstat(const char *restrict pathname, struct stat *restrict buf);连接文件描述命，获取文件属性。2 文件对应的属性
+
+struct stat {
+        mode_t     st_mode;       //文件对应的模式，文件，目录等
+        ino_t      st_ino;        //inode节点号
+        dev_t      st_dev;        //设备号码
+        dev_t      st_rdev;       //特殊设备号码
+        nlink_t    st_nlink;      //文件的连接数
+        uid_t      st_uid;        //文件所有者
+        gid_t      st_gid;        //文件所有者对应的组
+        off_t      st_size;       //普通文件，对应的文件字节数
+        time_t     st_atime;      //文件最后被访问的时间
+        time_t     st_mtime;      //文件内容最后被修改的时间
+        time_t     st_ctime;      //文件状态改变时间
+        blksize_t  st_blksize;    //文件内容对应的块大小
+        blkcnt_t   st_blocks;     //伟建内容对应的块数量
+      };
+----------------------------------------------------------------------------------------
+#include <unsitd.h>
+#inlcude <sys/stat.h>
+#include <sys/types.h>
+int fstat(int filedes,struct stat *buf);
+int stat(const char *path,struct stat *buf);
+int lstat(const char *path,struct stat *buf);
+这三个系统调用都可以返回指定文件的状态信息，这些信息被写到结构struct stat的缓冲区中。通过分析这个结构可以获得指定文件的信息。
+
+void report(struct stat *ptr)
+{
+     printf("The major device no is:%d\n",major(ptr->st_dev));//主设备号
+     printf("The minor device no is:%d\n",minor(ptr->st_dev));//从设备号
+     printf("The file's node number is:%d\n",ptr->st_ino);//文件节点号
+     printf("The file's access mode is:%d\n",ptr->st_mode);//文件的访问模式
+     printf("The file's hard link number is:%d\n",ptr->st_nlink);//文件的硬链接数目
+     printf("The file's user id is:%d\n",ptr->uid);//文件拥有者的ID
+     printf("The file's group id is:%d\n",ptr->gid);//文件的组ID
+     printf("The file's size is:%d\n",ptr->st_size);//文件的大小
+     printf("The block size is:%d\n",ptr->blksize);//文件占用的块数量
+     printf("The number of allocated blocks is:%d\n",ptr->st_blocks);//文件分配块数量
+     struct tm*accesstime,*lmodifytime,*lchangetime;//访问时间，修改时间，最后一个改变时间（属性）
+     accesstime=localtime(&(ptr->st_atime));
+     accesstime=localtime(&(ptr->st_mtime));
+     accesstime=localtime(&(ptr->st_ctime));
+     printf("The last access time is: %d::%d::%d\n",accesstime->hour,accesstime->min,accesstime->sec);
+     printf("The last modify time is:%d::%d::%d\n",lmodifytime->hour,lmodifytime->min,lmodifytime->sec);
+     printf("The last change time is:%d::%d::%d\n",lchangetime->hour,lchangetime->min,lchangetime->sec);
+}
+
+结构time_t可用用localtime转换成tm结构，获得本地时间。
+
+stat系统调用系列包括了fstat、stat和lstat，它们都是用来返回“相关文件状态信息”的，三者的不同之处在于设定源文件的方式不同。
+
+1
+
+首先隆重介绍的是一个非常重要的”VIP”人物，他是fstat, stat和lstat三者都要用到的一个结构体类型，名字叫做struct stat。可以说，没有这个struct stat的支持，上述三个系统调用将寸步难行。
+
+这个struct stat结构体在不同的UNIX/Linux系统中的定义是有小的区别的，但你完全不用担心，这并不会影响我们的使用。
+
+在struct stat结构体中我们常用的且各个平台都一定有的域是：
+
+st_mode 文件权限和文件类型信息 （记住这个黑体橘红色）
+
+st_ino   与该文件关联的inode
+
+st_dev   保存文件的设备
+
+st_uid   文件属主的UID号
+
+st_gid   文件属主的GID号
+
+st_atime 文件上一次被访问的时间
+
+st_ctime 文件的权限、属主、组或内容上一次被修改的时间
+
+st_mtime 文件的内容上一次被修改的时间。（和st_ctime的不同之处显而易见）
+
+st_nlink  该文件上硬连接的个数
+
+我分别提取了solaris（UNIX）和fedora（Linux）的struct stat结构体的原始定义：大家可以自己比对一下便可以发现两者确实有所不同，但主要的域是完全相同的。
+
+solaris的struct stat定义：
+
+struct stat {
+dev_t           st_dev;
+ino_t           st_ino;
+mode_t          st_mode;
+nlink_t         st_nlink;
+uid_t           st_uid;
+gid_t           st_gid;
+dev_t           st_rdev;
+off_t           st_size;
+timestruc_t     st_atim;
+timestruc_t     st_mtim;
+timestruc_t     st_ctim;
+blksize_t       st_blksize;
+blkcnt_t        st_blocks;
+char            st_fstype[_ST_FSTYPSZ];
+};
+
+fedora的struct stat定义：
+
+struct stat
+{
+__dev_t st_dev;                     /* Device.  */
+unsigned short int __pad1;
+__ino_t st_ino;                     /* File serial number.  */
+__mode_t st_mode;                   /* File mode.  */
+__nlink_t st_nlink;                 /* Link count.  */
+__uid_t st_uid;                     /* User ID of the file’s owner. */
+__gid_t st_gid;                     /* Group ID of the file’s group.*/
+__dev_t st_rdev;                    /* Device number, if device.  */
+unsigned short int __pad2;
+__off_t st_size;                    /* Size of file, in bytes.  */
+__blksize_t st_blksize;             /* Optimal block size for I/O.  */
+__blkcnt_t st_blocks;               /* Number 512-byte blocks allocated. */
+struct timespec st_atim;            /* Time of last access.  */
+struct timespec st_mtim;            /* Time of last modification.  */
+struct timespec st_ctim;            /* Time of last status change.  */
+unsigned long int __unused4;
+unsigned long int __unused5;
+};
+
+2
+
+大家一定注意到了，在上面列举域的时候，我在st_mode处使用了黑体橘红色 标识，原因在于这个域不像其他域那么容易使用，其他的域的值显而易见，而st_mode域是需要一些宏予以配合才能使用的。其实，通俗说，这些宏就是一些特定位置为1的二进制数的外号，我们使用它们和st_mode进行”&”操作，从而就可以得到某些特定的信息。
+
+文件类型标志包括：
+
+S_IFBLK：文件是一个特殊的块设备
+
+S_IFDIR：文件是一个目录
+
+S_IFCHR：文件是一个特殊的字符设备
+
+S_IFIFO：文件是一个FIFO设备
+
+S_IFREG：文件是一个普通文件（REG即使regular啦）
+
+S_IFLNK：文件是一个符号链接
+
+其他模式标志包括：
+
+S_ISUID：文件设置了SUID位
+
+S_ISGID：文件设置了SGID位
+
+S_ISVTX：文件设置了sticky位
+
+用于解释st_mode标志的掩码包括：
+
+S_IFMT：文件类型
+
+S_IRWXU：属主的读/写/执行权限，可以分成S_IXUSR, S_IRUSR, S_IWUSR
+
+S_IRWXG：属组的读/写/执行权限，可以分成S_IXGRP, S_IRGRP, S_IWGRP
+
+S_IRWXO：其他用户的读/写/执行权限，可以分为S_IXOTH, S_IROTH, S_IWOTH
+
+还有一些用于帮助确定文件类型的宏定义，这些和上面的宏不一样，这些是带有参数的宏，类似与函数的使用方法：
+
+S_ISBLK：测试是否是特殊的块设备文件
+
+S_ISCHR：测试是否是特殊的字符设备文件
+
+S_ISDIR：测试是否是目录（我估计find . -type d的源代码实现中就用到了这个宏）
+
+S_ISFIFO：测试是否是FIFO设备
+
+S_ISREG：测试是否是普通文件
+
+S_ISLNK：测试是否是符号链接
+
+S_ISSOCK：测试是否是socket
+
+3
+
+我们已经学习完了struct stat和各种st_mode相关宏，现在就可以拿它们和stat系统调用相互配合工作了！
+
+int fstat(int filedes, struct stat *buf);
+
+int stat(const char *path, struct stat *buf);
+
+int lstat(const char *path, struct stat *buf);
+
+聪明人一眼就能看出来fstat的第一个参数是和另外两个不一样的，对！fstat区别于另外两个系统调用的地方在于，fstat系统调用接受的是 一个“文件描述符”，而另外两个则直接接受“文件全路径”。文件描述符是需要我们用open系统调用后才能得到的，而文件全路经直接写就可以了。
+
+stat 和lstat的区别：当文件是一个符号链接时，lstat返回的是该符号链接本身的信息；而stat返回的是该链接指向的文件的信息。（似乎有些晕吧，这 样记，lstat比stat多了一个l，因此它是有本事处理符号链接文件的，因此当遇到符号链接文件时，lstat当然不会放过。而 stat系统调用没有这个本事，它只能对符号链接文件睁一只眼闭一只眼，直接去处理链接所指文件喽）
+

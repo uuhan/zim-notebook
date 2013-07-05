@@ -1,0 +1,32 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2012-11-30T12:47:39+08:00
+
+====== aufs3 ======
+Created 星期五 30 十一月 2012
+ * Updating module dependencies for 3.4.9-gentoo ...
+WARNING: //lib/modules/3.4.9-gentoo/misc/aufs.ko needs unknown symbol inode_sb_list_lock
+WARNING: //lib/modules/3.4.9-gentoo/misc/aufs.ko needs unknown symbol file_sb_list_del
+WARNING: //lib/modules/3.4.9-gentoo/misc/aufs.ko needs unknown symbol do_splice_to
+WARNING: //lib/modules/3.4.9-gentoo/misc/aufs.ko needs unknown symbol security_inode_permission
+WARNING: //lib/modules/3.4.9-gentoo/misc/aufs.ko needs unknown symbol security_file_mmap
+WARNING: //lib/modules/3.4.9-gentoo/misc/aufs.ko needs unknown symbol __devcgroup_inode_permission
+WARNING: //lib/modules/3.4.9-gentoo/misc/aufs.ko needs unknown symbol lookup_hash
+WARNING: //lib/modules/3.4.9-gentoo/misc/aufs.ko needs unknown symbol do_splice_from
+WARNING: //lib/modules/3.4.9-gentoo/misc/aufs.ko needs unknown symbol do_truncate
+WARNING: //lib/modules/3.4.9-gentoo/misc/aufs.ko needs unknown symbol security_file_permission
+WARNING: //lib/modules/3.4.9-gentoo/misc/aufs.ko needs unknown symbol security_inode_readlink     
+
+
+
+
+Thanks. I'm trying that now.
+
+Edit: It worked! The missing symbol errors went away. I got a different fatal error when I tried to "modprobe aufs" but that error went away when I emerged aufs3 again after rebuilding and installing the kernel after emerging aufs3 for the first time.
+
+So the recipe is:
+
+    Emerge aufs3
+    Rebuild and re-install the kernel
+    Emerge aufs3 again
+

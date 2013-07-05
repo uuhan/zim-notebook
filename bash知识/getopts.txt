@@ -1,0 +1,64 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2013-02-15T01:11:33+08:00
+
+====== getopts ======
+Created 星期五 15 二月 2013
+
+getopts optstring varname [arg ...]
+
+optstring  option字符串，会逐个匹配
+varname    每次匹配成功的选项
+arg        参数列表，没写时它会取命令行参数列表
+
+$OPTIND    特殊变量，option index，会逐个递增
+$OPTARG    特殊变量，option argument，不同情况下有不同的值
+
+
+细则1：当optstring以”:“开头时，getopts会区分invalid option错误和miss option argument错误。
+      invalid option时，varname会被设成?，$OPTARG是出问题的option；
+      miss option argument时，varname会被设成:，$OPTARG是出问题的option。
+      如果optstring不以”:“开头，invalid option错误和miss option argument错误都会使
+      varname被设成?，$OPTARG是出问题的option。
+
+细则2：当optstring中的字母跟”:“时，表明该option可接参数，参数(argument)放在$OPTARG中；
+      如果缺参数，且optstring是以”:“开头，则varname的值会是:，$OPTARG是该option，
+      否则varname的值是?，$OPTARG是该option。(参照细则1)
+
+简单的sample:
+
+#!/bin/bash
+
+SKIPBLANKS=
+TMPDIR=/tmp
+CASE=lower
+
+while getopts :bt:u arg
+do
+    case $arg in
+        b) SKIPBLANKS=TRUE
+                  echo "If skip blanks? $SKIPBLANKS"
+                  ;;
+
+        t) if [ -d "$OPTARG" ]
+                    then
+                    TMPDIR=$OPTARG
+                    echo "Temp dir is $TMPDIR."
+                  else
+                    echo "$0: $OPTARG is not a directory." >&2
+                    exit 1
+                  fi
+                  ;;
+
+        u) CASE=upper
+                  echo "Case sensitivity is $CASE."
+                  ;;
+
+        :) echo "$0: Must supply an argument to -$OPTARG." >&2
+                  exit 1
+                  ;;
+
+        \?) echo "Invalid option -$OPTARG ignored." >&2
+                  ;;
+        esac
+done

@@ -1,0 +1,113 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2012-12-02T13:27:09+08:00
+
+====== vim autocmd ======
+Created 星期日 02 十二月 2012
+
+
+vim配置技巧——在vim中使用autocmd命令在保存文件时自动插入最后修改日期和时间
+
+   今天在研究vim的autocmd命令时看到":help auto"的最后，帮助文档中举了一个例子：在写入一个 *.html 文件时自动插入当前日期和时间。如下：
+autocmd BufWritePre,FileWritePre *.html   ks|call LastMod()|'s
+fun LastMod()
+    if line("$") > 20
+        let l = 20
+    else
+        let l = line("$")
+    endif
+    exe "1," . l . "g/Last modified: /s/Last modified: .*/Last modified: " .
+        \ strftime("%Y %b %d")
+endfun
+
+
+随后解释了这段代码：
+
+要这段代码工作，你需要在文件开始的 20 行里有这行 "Last modified: <date
+time>"。 Vim 把 <date time> (包括该行其后的任何内容) 替换为当前的日期和时间。
+解释:
+    ks        保存当前位置到 's' 标记
+    call LastMod()  调用 LastMod() 函数完成工作
+    's        光标回到旧的位置
+LastMode() 函数先检查文件是否少于 20 行，然后用 ":g" 命令查找包含 "Last
+Modified:" 的行。在这些行上执行 ":s" 命令实现从已有的时间到当前时间的替换。
+":execute" 命令使 ":g" 和 ":s" 命令可以使用表达式。日期用 strftime() 函数取
+得。它可以用别的参数取得不同格式的日期字符串。
+
+
+看到这，我突发灵感：这几天一直频繁更改自己的vim配置文件_vimrc，每次修改完都要手动去修改文件头的最后修改时间，何不用这段代码把自己解脱出来呢？于是把以上代码拷到我的_vimrc里，并把第一句改成：
+autocmd BufWritePre,FileWritePre _vimrc   ks|call LastMod()|'s
+
+
+然后把文件头部的最后修改时间那一行改成如下：
+" Last modified: <date time>
+
+
+保存，重启vim，打开_vimrc，运行:w<CR>，这一行果然自动变成：
+" Last modified: 2007 九月 06
+
+
+嗯，日期有了，还差个时间，自然想到去该一下那个LastMod()函数，这时意外的发现：
+exe "1," . l . "g/Last modified: /s/Last modified: .*/Last modified: " .
+        \ strftime("%Y %b %d")
+
+
+变成了
+exe "1," . l . "g/Last modified: 2007 九月 06
+        \ strftime("%Y %b %d")
+
+
+稍加思索后，我明白了，因为这个函数也在前20行所以在保存自动插入时间时把这句中的Last modified: 也给替换了。
+
+最简单的解决办法就是把这个函数弄到20行之后。但如果配置文件里只有很少的配置项，我就不得不在函数前加入好几行空白行。琢磨来琢磨去，这个例子函数存在很大的问题。于是决定将它修改一番，使其没有任何限制。
+
+先来分析一下函数中关键的一句：
+exe "1," . l . "g/Last modified: /s/Last modified: .*/Last modified: " .
+        \ strftime("%Y %b %d")
+
+
+经过上面的if语句，此时变量L已经变成了_vimrc文件的行数(如果行数不到20)或20。那么这句话的意思是：从第一行到第L行，先用g命令找到与正则表达式“/Last modified: /”匹配的一行，再用s命令把与正则表达式“/Last modified: .*/”匹配的内容替换成“Last modified: 当前日期”，其中strftime函数返回的就是当前日期。
+
+而这个行数正好在第1到L行内，并且这一句正好匹配“/Last modified: .*/”，故，除了我们想要的那一行被替换了之外，这一行(exe ...)也被替换。
+
+思来想去，势必要把“g/Last modified: /”用另一种方式表达才不致匹配自己，后面的两个“Last modified”也要变一下，试来试去，终于这样可以了：
+exe "1," . l . "g/[L]ast modified: /s/[L]ast modified: .*/Last modified:[不要这里的空格]" .
+        \ strftime("[在这里添加空格] %Y %b %d")
+
+
+后来发现g命令是多余的（我武断了，其实是有用的，见一楼评论），再加上时间，最终变成了这样：
+exe "1," . l . "s/[L]astModified: .*/LastModified:" .
+        \ strftime(" %Y %b %d %X")
+
+
+这样，这个函数没有了所在行的限制，故上面的if语句也应改一下，函数最终变成这样(函数名也顺便改了一下)：
+un LastModified()
+    let l = line("$")
+
+    exe "1," . l . "s/[L]astModified: .*/LastModified:" .
+        \ strftime(" %Y %b %d %X")
+
+endfun
+
+
+是不是精简了很多，并且比原来的要更具有可扩展性，和松耦合性。
+
+搞正则表达式顺了手，干脆把第一句的autocmd也改了：
+autocmd BufWritePre,FileWritePre [._]vimrc   ks|call LastModified()|'s
+
+
+这样，无论打开的是.vimrc还是_vimrc都可以在保存时自动插入修改日期和时间了。
+
+最终成果如下：（评论第9楼才是最终成果）
+autocmd BufWritePre,FileWritePre [._]vimrc   ks|call LastModified()|'s
+
+fun LastModified()
+    let l = line("$")
+
+    exe "1," . l . "g/[L]ast modified: /s/[L]astModified: .*/LastModified:" .
+        \ strftime(" %Y %b %d %X")
+
+endfun
+
+
+PS：万一，（一万分之一，当然几率很小）在文件的其他地方恰巧也出现了LastModified，并且那一行也恰巧与正则表达式/[L]astModified: .*/匹配，那你可的小心了。^_^

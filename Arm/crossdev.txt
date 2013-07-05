@@ -1,0 +1,16 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2013-01-09T00:45:57+08:00
+
+====== crossdev ======
+Created 星期三 09 一月 2013
+
+There is an error in the CFLAGS handling when crossdev compiles for the target. binutils and gcc are compiled for the host and configure uses the CFLAGS from make.conf, in your case -march=native -pipe -O2 -fno-strict-aliasing. configure of the glibc's ebuild uses the same CFLAGS when it tries to find out which object file suffix armv6j-hardfloat-linux-gnueabi-gcc generates. So the error occurs during the execution of armv6j-hardfloat-linux-gnueabi-gcc -march=native -pipe -O2 -fno-strict-aliasing. -march=native does not work for cross-compilers because the compiler on the host cannot check the target CPU.
+
+Here is the workaround. In the second step enter the CFLAGS value of the target.
+
+    crossdev --stage2 -S -v -t armv6j-hardfloat-linux-gnueabi
+    CFLAGS="-O2 -pipe -march=armv6j -mfpu=vfp -mfloat-abi=hard" crossdev --stage3 -S -v -t armv6j-hardfloat-linux-gnueabi
+    crossdev --stage4 -S -v -t armv6j-hardfloat-linux-gnueabi
+
+These three steps worked for my Dockstar (armv5) and Cubox (armv7).

@@ -1,0 +1,71 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2012-12-17T21:45:51+08:00
+
+====== layman ======
+Created 星期一 17 十二月 2012
+
+Gentoo 的 Overlay 是 Gentoo 用户把自己书写的 ebuild 提交给官方的项目，现在我们一般都在使用layman 来管理。它可以让你在同一台机器上轻松地使用与同步多个 Portage Overlay。
+
+所以我们在使用 Overlay 前要先安装 layman：
+$ sudo emerge -av layman
+
+然后将把这些 Overlay 加入到你的 PORTDIR_OVERLAY 变量中：
+$ vi /var/lib/layman/make.conf文件
+
+[plain] view plaincopy
+
+    PORTDIR_OVERLAY="  
+    $PORTDIR_OVERLAY"  
+
+然后在/etc/make.conf最后添加
+
+[plain] view plaincopy
+
+    source /var/lib/layman/make.conf  
+    PORTDIR_OVERLAY="${PORTDIR} ${PORTDIR_OVERLAY}"  
+
+
+
+layman 的日常使用：
+
+列出所有可用的 Overlay：
+
+$ layman -L
+
+列出已经添加的源
+
+$layman -l
+
+添加一个可用的 Overlay，如 gentoo-china：
+$ layman -a gentoo-china
+
+同步本地所有的 Overlay 副本（你已经添加的）：
+$ sudo layman -S
+或
+$ sudo layman -s ALL
+
+同步特定的本地 Overlay 副本，如 gentoo-china：
+$ sudo layman -s gentoo-china
+
+
+为了快速搜索软件包， 推荐使用 eix
+[plain] view plaincopy
+
+    emerge -avt eix (安装此工具)  
+    eix-update (更新本地包内容, 创建搜索数据库)  
+    eix-sync (同步源和layman)  
+    eix package_name (搜索包package_name)  
+    eix -S 或 eie--description words (在包描述中搜索)  
+
+
+
+还有equery工具方便查看已安装包的信息
+[plain] view plaincopy
+
+    emerge gentoolkit (安装此工具)  
+    equery list (列出以及安装的包)  
+    equery files package_name (查看已经安装的包安装的具体内容)  
+    equery belongs vim (查看程序 vim 属于那个包)  
+    equery depends package_name (查看那些包依赖于package_name)  
+    equery uses package_name (查看包package_name使用的use变量)  

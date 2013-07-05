@@ -1,0 +1,8 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2012-11-12T01:44:19+08:00
+
+====== portage ======
+Created 星期一 12 十一月 2012
+http://distfiles.gentoo.org/distfiles/portage-2.1.11.31.tar.bz2
+

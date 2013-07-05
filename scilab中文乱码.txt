@@ -1,0 +1,47 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2013-03-13T21:22:57+08:00
+
+====== scilab中文乱码 ======
+Created 星期三 13 三月 2013
+
+scilab5 菜单乱码问题
+周四, 10/09/2008 - 11:16 — kambrian
+
+scilab5解压后启动，中文Linux下菜单都是一个个小方格，可如下解决：
+
+在scilab的目录下找到比如/scilab-5.0.2/thirdparty/java/lib/fonts/目录，在其中建立fallback目录，然后把系统的中文字体(在/usr/share/fonts/目录下找ukai.ttf或者uming.ttf或者比如文泉驿(wqy)的字体) 拷贝或者链接到该目录下。
+
+比如在Fedora 9下，ukai.ttf位于cjkunifonts-ukai，用$SCILAB_DIR表示scilab的安装目录，则如下执行：
+
+  
+cd $SCILAB_DIR/thirdparty/java/lib/fonts/
+mkdir fallback
+cd fallback
+ln /usr/share/fonts/cjkunifonts-ukai/ukai.ttf
+
+然后启动scilab,应该就没问题了。
+
+如果是在不行，可尝试使用英文启动scilab:
+
+scilab -l en
+
+参考：
+
+http://www.scilab.org.cn/bbs/viewtopic.php?f=2&t=188#p591
+
+    Interactive Programming
+    Windows
+    Non-Academic
+    Linux
+
+    要发表评论，请先登录 或 注册
+    3173 次阅读
+
+评论
+周三, 12/17/2008 - 20:52 — kambrian
+java中文乱码的通用解决方法
+
+此法甚是有效，刚刚装了sun java本身就中文乱码，于是同样找到它的fonts目录然后建立fallback，做链接，解决。
+
+其它使用java的程序如果出现中文乱码都可同样解决，比如Matlab。

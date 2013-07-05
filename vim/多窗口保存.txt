@@ -1,0 +1,54 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2012-12-19T01:58:11+08:00
+
+====== 多窗口保存 ======
+Created 星期三 19 十二月 2012
+
+							*ZZ*
+ZZ			Write current file, if modified, and quit (same as
+			":x").  (Note: If there are several windows for the
+			current file, the file is written if it was modified
+			and the window is closed).
+
+							*ZQ*
+ZQ			Quit without checking for changes (same as ":q!").
+			{not in Vi}
+
+MULTIPLE WINDOWS AND BUFFERS				*window-exit*
+
+							*:qa* *:qall*
+:qa[ll]		Exit Vim, unless there are some buffers which have been
+		changed.  (Use ":bmod" to go to the next modified buffer).
+		When 'autowriteall' is set all changed buffers will be
+		written, like |:wqall|. {not in Vi}
+
+:conf[irm] qa[ll]
+		Exit Vim.  Bring up a prompt when some buffers have been
+		changed.  See |:confirm|. {not in Vi}
+
+:qa[ll]!	Exit Vim.  Any changes to buffers are lost. {not in Vi}
+		Also see |:cquit|, it does the same but exits with a non-zero
+		value.
+
+							*:quita* *:quitall*
+:quita[ll][!]	Same as ":qall". {not in Vi}
+
+:wqa[ll] [++opt]				*:wqa* *:wqall* *:xa* *:xall*
+:xa[ll]		Write all changed buffers and exit Vim.  If there are buffers
+		without a file name, which are readonly or which cannot be
+		written for another reason, Vim will not quit. {not in Vi}
+
+:conf[irm] wqa[ll] [++opt]
+:conf[irm] xa[ll]
+		Write all changed buffers and exit Vim.  Bring up a prompt
+		when some buffers are readonly or cannot be written for
+		another reason.  See |:confirm|. {not in Vi}
+
+:wqa[ll]! [++opt]
+:xa[ll]!	Write all changed buffers, even the ones that are readonly,
+		and exit Vim.  If there are buffers without a file name or
+		which cannot be written for another reason, Vim will not quit.
+		{not in Vi}
+
+==============================================================================

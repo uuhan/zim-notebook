@@ -1,0 +1,23 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2012-12-29T06:20:38+08:00
+
+====== qcow ======
+Created 星期六 29 十二月 2012
+
+qcow2格式
+对于qcow2格式需要使用qemu-nbd这个工具
+modprobe nbd max_part=63
+qemu-nbd -c /dev/nbd0 image.img
+mount /dev/nbd0p1 /mnt/image
+如果是LVM格式的镜像：
+vgscan	
+vgchange -ay
+mount /dev/VolGroupName/LogVolName /mnt/image
+最后使用结束需释放资源：
+umount /mnt/image
+vgchange -an VolGroupName
+killall qemu-nbd
+kpartx -d /dev/loop0
+losetup -d /dev/loop0
+

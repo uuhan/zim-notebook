@@ -1,0 +1,305 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2013-03-27T23:40:28+08:00
+
+====== 字体 ======
+Created 星期三 27 三月 2013
+
+标  题: Emacs的字体设置方法总结(第二版)
+发信站: 水木社区 (Wed Mar 22 16:18:03 2006), 站内
+
+根据 Dieken 的建议，添加了 windows 下的字体设置方法。
+
+* Emacs的字体设置方法总结
+
+在 X 下使用 emacs 时，如果字体配置不好，emacs 就会显得十分丑陋。而作为
+emacs 的用户，每天相当长的时间都在盯着这个编辑器，如果字体不好看，对眼
+睛是一种严重的伤害。除非有严重的自虐倾向，没有人会喜欢这种感觉。a
+
+我在这篇短文中总结了 emacs 的字体设置方法，由于 linux 的字体设置本身就
+是一个很复杂的问题，本文如有疏漏，希望大家指正。
+
+* 两种字体系统
+
+实际上 XFree86/Xorg 包括了两种字体系统：核心字体系统和xft字体系统。核心
+字体系统历史悠久，传统的 X 程序使用的都是核心字体系统。但是随着人们对字
+体的显示要求越来越高，核心字体系统渐渐地有些落伍了。为了更好地支持矢量
+字体，实现抗锯齿、子像素光栅化等高级特性，xft字体系统开始浮出水面。
+
+由于 xft 字体系统所具有的种种优良特性，现代的 X 程序开始普遍采用 xft
+字体系统绘制文字，逐渐开始取代核心字体系统。例如，基于 Qt/Gtk2 的程序
+采用的都是 xft 字体系统。
+
+但是核心字体系统并没有完全退出历史舞台，很多老的 X 程序仍然采用的是核心
+字体系统，要把这些程序全部迁移到 xft 字体系统还要做许多工作。很不幸
+emacs 就是这样一个程序。有一个正在开发中的 emacs 分支（XFT_JHD_BRANCH），
+就是试图让 emacs 支持 xft 字体系统，可惜这个分支还很不成熟。也许下一个
+代的 emacs 会支持 xft，但目前我们还只能接受 emacs 不支持 xft 的现实。
+
+* 字体的安装
+
+由于目前的状况是两种字体系统并存，我们安装字体时就必须同时照顾到两者。
+有时候在网上我们会看到一些字体安装经验介绍，比如：“安装字体太简单了，
+把字体丢到 ~/.fonts 下面，执行一下 fc-cache 命令，你就可以在 firefox 中
+使用这个字体了。”实际上，这只是为 xft 字体系统安装字体的方法，按这种方
+法安装的字体，采用核心字体系统的程序无法使用，也就是说 emacs 无法使用这
+样安装的字体。
+
+下面我们介绍为核心字体系统安装字体的方法，很多人对这种方法记忆犹新，因
+为在几年前，xft出现之前，为linux安装字体采用的都是这种方法。
+
+第一步，拷贝字体。选择一个目录，把想用的字体拷贝到这个目录下。比如：
+
+   cp simsun.ttf /path/to/my/truetype/font/simsun.ttf
+
+第二步，生成 fonts.scale 与 fonts.dir
+
+   在你的字体目录下用 mkfontscale 命令生成 fonts.scale 文件，用
+   mkfontdir 命令生成 fonts.dir 文件，注意命令的顺序不能颠倒，否则生成
+   的 fonts.dir 是空文件。其实这两个文件的内容是一样的，因此也可以直接
+   cp fonts.scale fonts.dir
+
+   不知道是什么原因 mkfontscale/mkfontdir 命令生成的 fonts.scale 文件中
+   缺少对 gbk 字体的支持，因此需要手工编辑 fonts.scale，添加一行：
+
+   simsun.ttf -misc-simsun-medium-r-normal--0-0-0-0-p-0-gbk-0
+
+   如果你用的是不同的字体，这一行的内容可能不太一样，但需要注意的是必须要
+   加上一个以 gbk-0 结尾的行。同时，文件第一行的那个数字要加1。
+   fonts.dir文件也要进行相应的修改，使这两个文件保持一致。如果不进行这
+   一步，就无法使用 gbk 字体。
+
+第三步，修改 /etc/X11/xorg.conf (如果你在用 XFree86, 那就修改
+   XF86Config-4):
+
+   找到 Section "Module", 加载 freetype 模块：
+
+   Section "Module"
+           ......
+           Load    "freetype"
+           ......
+   EndSection
+
+   找到 Section "Files", 添加你的字体路径：
+
+   Section "Files"
+           ......
+           FontPath   "/path/to/my/truetype/font"
+           ......
+   EndSection
+
+   最后重新启动 X，这时候用 xlsfonts 命令应该能看到你安装的字体。注意，只
+   有 xlsfonts 列出的字体，emacs 才能使用。
+
+* emacs的字体设置
+
+由于 emacs 是个支持多语言的程序，它支持很多种字符集，而一种字体一般只覆
+盖一个或几个字符集，因此只用一种字体是无法显示 emacs 支持的所有文字的。
+因此在emacs中需要设置 fontset，也就是多种字体的集合，或者叫做字体集。
+
+如果我们不指定 fontset, 那么 emacs 会使用默认的 fontset-default 来显示
+字体。如果你觉得这种字体不好看，就需要自己定义 fontset。定义 fontset 有
+两种方式，一种是在 ~/.emacs 中使用 create-fontset-from-fontset-spec 函
+数，令一种是在 ~/.Xdefaults 中定义资源。我们分别介绍这两种方法。
+
+** 使用 create-fontset-from-fontset-spec
+
+每个 fontset 都有一个很长的正规名称，例如：
+
+-*-courier-medium-r-normal--14-*-*-*-*-*-fontset-courier
+
+为了方便起见也可以使用短名称，就是最后两段：fontset-courier
+
+那么这个名称是怎么生成的呢？首先我们用 xlsfonts 命令找到自己满意的字体，
+比如:
+
+-adobe-courier-medium-r-normal--14-100-100-100-m-90-iso8859-1
+
+然后把最后两段去掉，也就是把 iso8859-1 去掉，换上自己起的字体集名称，
+比如 fontset-courier，最后把我们不关心的部分用 `*' 号取代就可以了，
+注意，用 xlsfonts 列出来的字体名称中，有些字段为 0，这些是可缩放的矢量
+字体，这些 0 不能保留，必须用数字或 `*' 号取代，例如，
+
+-adobe-courier-medium-r-normal--0-0-0-0-p-0-iso8859-1
+
+要改为：
+
+-adobe-courier-medium-r-normal--14-*-*-*-p-*-fontset-courier
+
+还有一点需要注意，尽量不要选用可缩放的矢量字体，因为 emacs 不支持 xft，
+因此无法打开抗锯齿，这些字体会显得很毛糙，不好看。
+
+选定了字体就可以用 create-fontset-from-fontset-spec 函数定义 fontset
+了，这个函数很简单，它的参数是个字符串：
+
+(create-fontset-from-fontset-spec
+ (concat
+  "-*-courier-medium-r-normal-*-14-*-*-*-*-*-fontset-courier,"
+  "chinese-gb2312:-*-simsun-medium-r-*-*-14-*-*-*-c-*-gb2312*-*,"
+  "mule-unicode-0100-24ff:-*-simsun-medium-r-*-*-14-*-*-*-c-*-iso10646*-*,"
+  "korean-ksc5601:-*-*-medium-r-*-*-14-*-*-*-*-*-ksc5601*-*,"
+  "chinese-cns11643-5:-*-simsun-medium-r-*-*-14-*-*-*-c-*-gbk*-*,"
+  "chinese-cns11643-6:-*-simsun-medium-r-*-*-14-*-*-*-c-*-gbk*-*,"
+  "chinese-cns11643-7:-*-simsun-medium-r-*-*-14-*-*-*-c-*-gbk*-*,"
+  "sjis:-*-medium-r-normal--14-*-jisx0208*-*"))
+
+这个字符串的第一段是 fontset 的名称，实际上也指定了英文(ascii字符集)字
+体，后面的各段格式都是“字符集:字体”，分别为不同的字符集指定字体，例如
+上面的定义中，ascii采用courier字体，chinese-gb2312采用simsun字体，以此
+类推。
+
+定义好了 fontset 以后，我们就可以让 emacs 使用这个fontset了：
+
+(set-default-font "fontset-courier")
+
+另外，为了让 emacs 创建新的 frame 时 (C-x 5 系列命令) 采用我们指定的
+fontset，还要进行下面的设置：
+
+(setq default-frame-alist
+      (append
+       '((font . "fontset-courier")) default-frame-alist))
+
+** 在 ~/.Xdefaults 中定义 fontset
+
+第二种定义 fontset 的方法是在 ~/.Xdefualts 中定义资源字符串：
+
+Emacs.Fontset-0:-*-courier-medium-r-normal-*-14-*-*-*-*-*-fontset-courier,/
+ chinese-gb2312:-*-simsun-medium-r-*-*-14-*-*-*-c-*-*-*,/
+ mule-unicode-0100-24ff:-*-simsun-medium-r-*-*-14-*-*-*-c-*-iso10646*-*,/
+ korean-ksc5601:-*-*-medium-r-*-*-14-*-*-*-*-*-ksc5601*-*,/
+ chinese-cns11643-5:-*-simsun-medium-r-*-*-14-*-*-*-c-*-gbk*-*,/
+ chinese-cns11643-6:-*-simsun-medium-r-*-*-14-*-*-*-c-*-gbk*-*,/
+ chinese-cns11643-7:-*-simsun-medium-r-*-*-14-*-*-*-c-*-gbk*-*,/
+ sjis:-*-medium-r-normal--14-*-jisx0208*-*
+
+然后让 emacs 使用这个 fontset:
+
+Emacs.font: fontset-courier
+
+更改了 ~/.Xdefaults 的内容以后要执行：
+
+xrdb .Xdefaults
+
+命令，这样更改才能起作用。
+
+上述两种方法都可以实现同样的效果。但是有一点细微的差别，采用第一种方法
+时，fontset 的定义是写在 ~/.emacs 中的，而 emacs 启动过程中，是先建立了
+第一个窗口，然后才读取 ~/.emacs 的，建立第一个窗口时，因为还没有读到我
+们定义的 fontset, 因此它会采用 fontset-default 创建第一个窗口，当读到我
+们定义的 fontset 时，再进行调整，如果我们定义的 fontset 与默认的
+fontset-default 字体差别比较大，就会看到emacs进行了一个调整窗口大小的动
+作，这个动作延缓了 emacs 的启动过程。而采用第二种方法则不会出现这个问题，
+因此推荐使用第二种方法。
+
+
+* Emacs23 (emacs-unicode-2 分支) 的字体设置
+
+Emacs23的字体设置与上述方法类似，但也有所不同。或许是因为emacs23的实现
+比较独特，或许是emacs23的bug，按上述方法指定的中文字体无法起作用。因此，
+emacs23的字体设置采用下述方法：
+
+仍然采用 create-fontset-from-fontset-spec 创建 fontset:
+
+(create-fontset-from-fontset-spec
+  "-*-courier-medium-r-normal-*-14-*-*-*-*-*-fontset-courier")
+(set-default-font "fontset-courier")
+(setq default-frame-alist
+      (append
+       '((font . "fontset-courier")) default-frame-alist))
+
+也可以在 ~/.Xdefaults 中这样设置：
+
+Emacs.Fontset-0:-*-courier-medium-r-normal-*-14-*-*-*-*-*-fontset-courier
+Emacs.font:fontset-courier
+
+两种方法取其一即可。
+
+但是设置中文字体时，采用 set-fontset-font 分别指定各种 script 的字体：
+
+(set-fontset-font
+ "fontset-default" nil
+ "-*-simsun-*-*-*-*-14-*-*-*-*-*-gb2312.1980-*" nil 'prepend)
+(set-fontset-font
+ "fontset-courier" 'kana
+ "-*-simsun-*-*-*-*-14-*-*-*-*-*-gbk-0" nil 'prepend)
+(set-fontset-font
+ "fontset-courier" 'han
+ "-*-simsun-*-*-*-*-14-*-*-*-*-*-gbk-0" nil 'prepend)
+(set-fontset-font
+ "fontset-courier" 'cjk-misc
+ "-*-simsun-*-*-*-*-14-*-*-*-*-*-gbk-0" nil 'prepend)
+
+* Emacs for Windows 的字体设置
+
+在 Windows 下设置 emacs 字体只能在 ~/.emacs 中进行，因为 windows 下没
+有与 ~/.Xdefaults 等同的东西。除了所用字体不同以外，设置方式与linux基
+本相同。下面分别给出 windows 下 Emacs22 和 Emacs 23 的参考设置:
+
+** Emacs22 for windows 字体设置
+
+(setq w32-charset-info-alist
+    (cons '("gbk" w32-charset-gb2312 . 936) w32-charset-info-alist))
+
+(setq default-frame-alist
+      (append
+       '((font . "fontset-gbk")) default-frame-alist))
+
+(create-fontset-from-fontset-spec
+ (concat
+  "-outline-Courier New-normal-r-normal-normal-13-97-96-96-c-*-fontset-gbk,"
+  "chinese-gb2312:-outline-新宋体-normal-r-normal-*-14-*-96-96-c-*-iso10646-1,"
+  "mule-unicode-0100-24ff:-*-新宋体-normal-r-*-*-14-*-96-96-c-*-iso10646-1,"
+  "chinese-cns11643-5:-*-新宋体-normal-r-normal-*-14-*-96-96-c-*-iso10646-1,"
+  "chinese-cns11643-6:-*-新宋体-normal-r-normal-*-14-*-96-96-c-*-iso10646-1,"
+  "chinese-cns11643-7:-*-新宋体-normal-r-normal-*-14-*-96-96-c-*-iso10646-1"))
+(set-default-font "fontset-gbk")
+
+** Emacs23 for windows 字体设置
+
+(setq w32-charset-info-alist
+    (cons '("gbk" w32-charset-gb2312 . 936) w32-charset-info-alist))
+
+(setq default-frame-alist
+      (append
+       '((font . "fontset-gbk")) default-frame-alist))
+
+(create-fontset-from-fontset-spec
+  "-outline-Courier New-normal-r-normal-normal-13-97-96-96-c-*-fontset-gbk")
+(set-fontset-font
+ "fontset-default" nil
+ "-outline-新宋体-normal-r-normal-*-14-*-96-96-c-*-iso10646-1" nil 'prepend)
+(set-fontset-font
+ "fontset-gbk" 'kana
+ "-outline-新宋体-normal-r-normal-*-14-*-96-96-c-*-iso10646-1" nil 'prepend)
+(set-fontset-font
+ "fontset-gbk" 'han
+ "-outline-新宋体-normal-r-normal-*-14-*-96-96-c-*-iso10646-1" nil 'prepend)
+(set-fontset-font
+ "fontset-gbk" 'cjk-misc
+ "-outline-新宋体-normal-r-normal-*-14-*-96-96-c-*-iso10646-1" nil 'prepend)
+(set-fontset-font
+ "fontset-gbk" 'symbol
+ "-outline-新宋体-normal-r-normal-*-14-*-96-96-c-*-iso10646-1" nil 'prepend)
+(set-default-font "fontset-gbk")
+
+* 一些字体设置技巧
+
+** 几个字体相关的命令
+M-x describe-char
+
+我们可以使用这个命令查看光标所在的字符采用的是什么字体。
+
+M-x describe-fontset
+
+这个命令用来查看各个字符集分别采用了什么字体。
+
+这两个命令可以用来检验我们的设置是否发挥了作用。
+
+** 设置字体的技巧（Dieken提供）：
+
+(1)在*scratch* buffer中输入
+(frame-parameter nil 'font)
+光标放在行末按C-x C-e就可以看到当前字体;
+(2)Shift + MouseLeftClick可以出来字体选择对话框;
+(3)M-x describe-font可以查看当前字体描述
+(4)M-x set-default-font <RET><TAB>可以看到可以选择的字体。 

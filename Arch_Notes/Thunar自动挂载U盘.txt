@@ -1,0 +1,8 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2012-11-27T14:02:32+08:00
+
+====== Thunar自动挂载U盘 ======
+Created 星期二 27 十一月 2012
+
+{{~/snapshot/2012-11-27_700x424_scrot.png}}

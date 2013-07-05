@@ -1,0 +1,36 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2012-12-28T01:31:04+08:00
+
+====== 备份分区表 ======
+Created 星期五 28 十二月 2012
+
+今天重做了系统，原因分区表用fdisk 查看分区表有错误，我不想再重做了，所以备份一下分区表，以后出错了，直接恢复就行了。
+
+现在的分区如下：
+  Device Boot      Start         End      Blocks   Id  System
+/dev/sda1   *           1        2612    20980858+   7  HPFS/NTFS
+/dev/sda2            2613       19458   135309127+   5  Extended
+/dev/sda5            2613        6529    31463271    7  HPFS/NTFS
+/dev/sda6            6530        9141    20980858+  83  Linux
+/dev/sda7            9142       11753    20980858+  83  Linux
+/dev/sda8           11754       19048    58593280   83  Linux
+/dev/sda9           19048       19458     3289088   82  Linux swap / Solaris
+
+备份方法：
+
+1、备份分区表信息
+sudo fdisk -l >hda.txt  ＃分区表信息重定向输出到文件中
+2、备份MBR
+linux@linux-desktop:~/ex$ sudo dd if=/dev/sda of=mbr bs=512 count=1  ＃输入文件/dev/sda， 输出文件mbr（自己定义），输入（出）块大小512字节，复制一次，由于mbr是512个字节，所以读取写到mbr文件中了
+1+0 records in
+1+0 records out
+512 bytes (512 B) copied，4.0728e-05 秒，12.6 MB/秒
+linux@linux-desktop:~/ex$ ls  ＃查看备份成功
+hda.txt  mbr
+主引导记录512字节，前446是程序代码，后64字节包含分区表信息，最后2字节标识是MBR
+
+3、恢复分区表
+dd if=mbr of=/dev/sda bs=1 skip=446 count=66  #输入文件mbr,输出 /dev/sda ,块大小1个字节，输入跳过446字节，恢复66个字节，看来恢复的只有66个字节
+如果逻辑分区都没有了，则用fdisk 照着hda.txt的信息重分一下就行了。
+

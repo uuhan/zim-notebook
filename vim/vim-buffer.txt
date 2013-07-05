@@ -1,0 +1,274 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2012-12-23T01:18:29+08:00
+
+====== vim-buffer ======
+Created 星期日 23 十二月 2012
+
+Vim用得越来越顺手，同时我也知道我目前使用到的可能只是Vim强大功能的1%不到。对于Vim的多buffer编辑一直没有搞清楚，今天彻底的学习一下。
+
+        啥是buffer?
+        一个buffer就是一个已经载入内存的文件。所有打开的文件都对应着一个buffer，同时也存在着不对应任何文件的buffer。
+        咋确定一个buffer?
+        每个buffer都有一个特定的编号和名字，这个名字就是文件的名字，编号是由Vim自动分配的，确保唯一性。
+        咋创建一个buffer?
+        打开一个文件，就创造一个buffer。比如说 
+
+:edit file
+
+        。
+        俺咋能把一个文件加到buffer list，但又不打开这个文件？
+        用命令 
+
+:badd
+
+        咋查看当前的buffers list?
+
+:buffers
+
+           
+
+:ls
+
+           
+
+:files
+
+        咋delete一个buffer?
+
+:bdelete
+
+        命令。后面可以指定buffer的编号或者名称。
+        咋从窗口移除一个buffer？
+        这有好几个方法： 
+
+ 
+
+        1 关闭窗口，或者在那个窗口编辑另一个buffer的内容 
+
+ 
+
+        2 使用命令 
+
+:bunload
+
+        。这个命令将当前的buffer从窗口移除并且从内存里面移除。但是buffer不会从buffer list中移除。 
+
+ 
+
+        咋从buffer list里面编辑一个已经存在的buffer?
+        1 使用 
+
+:buffer
+
+        命令，并指定已存在的buffer的编号或名称 
+
+ 
+
+        2 先输入buffer的编号，然后用Ctrl-^跳过去 
+
+ 
+
+        3 使用 
+
+:sbuffer
+
+        命令，并传递buffer的名称，此时Vim会开一个新窗口并且在其中打开对应的buffer 
+
+ 
+
+        4 先输入buffer的编号，然后用 
+
+Ctrl-W ^
+
+           
+
+Ctrl-W Ctrl-^
+
+        ，同样是在新窗口中打开指定buffer
+        俺想从不同的buffer里面跳来跳去的，咋整？
+        1 跳到第一个buffer，用 
+
+:bfirst
+
+        或 
+
+:brewind
+
+        2 同上，但是在新窗口中，用 
+
+:sbfirst
+
+        或 
+
+:sbrewind
+
+        3 跳到下一个用 
+
+:bnext
+
+        或 
+
+:sbnext
+
+        4 跳到前一个用 
+
+:bprevious
+
+        或 
+
+:bNext
+
+        ，相应的有 
+
+:sbprevious
+
+        和 
+
+:sbNext
+
+        5 跳到最后一个buffer，用 
+
+:blast
+
+        或 
+
+:sblast
+
+        俺咋才能打开所有已经load的buffer?
+        使用命令 
+
+:unhide
+
+        或者 
+
+:sunhide
+
+        ，这样每个buffer都会在新窗口中打开。
+        俺咋跳到下一个修改过的buffer?
+        用命令 
+
+:bmodified
+
+        或 
+
+:sbmodified
+
+        有没有个脚本能让buffer用起来更简单点？
+        有的，有个脚本名字叫 
+
+bufexplorer.Vim
+
+           
+
+注意：这个我要看一下
+
+        能在Vim会话里面保存buffer list吗？
+        显然啊，在 
+
+Viminfo
+
+        中包含 
+
+%
+
+        就OK了
+        俺咋能把buffer list里面的都给删了？
+        打开Vim的时候带个文件名，或者用个命令 
+
+:bdelete
+
+        啥是隐藏buffer(hidden buffer)?
+        这个buffer，记录没保存的修改，不在窗口显示。当你同时编辑多个buffer，暂时没有保存的信息就归这个隐藏buffer管
+        俺如何载入多个buffer，其中有这个修改还没有保存的buffer?
+        你要先设置 
+
+hidden
+
+        ，这样的话Vim会记住你对buffer做的修改。当你退出Vim，就会询问你是不是要保存已做的修改。
+        当一个buffer变成hidden的时候，能不能将其unload或者delete掉？
+        有几个选项可以控制，设置 
+
+bufhidden
+
+        的时候，你可以指定当一个buffer变成hidden状态时要怎么处理，如果设置成 
+
+delete
+
+        ，那么buffer会被delete掉，如果设置成 
+
+unload
+
+        ，那么buffer会unload，如果设置成 
+
+hide
+
+        ，那就只是hide而已。
+        俺怎么能对buffer list里面的所有文件都执行同一个命令？
+        用 
+
+:bufdo
+
+        当俺从buffer list中打开一个buffer，如果那个buffer已经在一个窗口里面，俺想让那个窗口激活，而不是说再开一个新窗口，那该咋办？
+        把 
+
+switchbuf
+
+        选项设置成 
+
+useopen
+
+        buffer里面都存了些啥额外信息？
+        光标最后所在位置、marks、jump list之流
+        上面白话了那么多，所谓这个delete和unload到底有什么区别？
+
+unload
+
+        的话，buffer还在buffer list里面待着，不过文件内容要从内存里面移除； 
+
+delete
+
+        的话，先unload之，然后从buffer list里面删掉
+        有没有可能做到这样一件事，重用已经delete的buffer的编号？
+        别想了，impossible。
+        俺怎样得到一个临时性的buffer(scratch)?
+        可以这样设置 
+
+
+:set buftype=nofile
+:set bufhidden=hide
+:setlocal noswapfile
+
+        俺咋能不让一个buffer加到buffer list里面？
+
+:set nobuflisted
+
+        俺咋知道一个buffer是改了还是没该？
+        方法有好些。最简单的就是看标题栏或者状态栏，上面有个“+”。另外就是查看一下标记位 
+
+:set modified?
+
+        咋能不让修改buffer?
+
+:set nomodifiable
+
+        ，要是改变心意了，就 
+
+:set modifiable
+
+        俺只设定当前这个buffer，咋办？
+        用 
+
+:setlocal
+
+        ，比如说吧， 
+
+:setlocal textwidth=70
+
+        俺只对当前这个buffer用缩写，怎么办？
+
+:map 
+
+        或者是 
+
+:abb

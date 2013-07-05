@@ -1,0 +1,172 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2012-11-27T02:10:20+08:00
+
+====== Arch上使用portage ======
+Created 星期二 27 十一月 2012
+
+事情是這樣的，我最近花了時間作好lfs就想為它裝個套件管理系統，
+首選當然是我最愛的Gentoo portage，只是lfs花了我兩個多禮拜的時間才裝好，萬一portage安裝失敗那可是令人非常沮喪的一件事，
+所以我腦筋就動到安裝不甚費力，且下載體積小的ArchLinux上，先拿它來做測試安裝，可行再裝到lfs上，以下是我下載的Arch iso image，我試過一定要用"Don't Panic" 版本，其實我最早下載的是最新版，結果'Panic'，這才改用穩定版。
+Archlinux-i686-2007.08-2.core.iso
+161.792kb
+
+Arch在VirtualBox中安裝與配置到完成一個可運行的系統15分鐘不到(今天早上我做了第二次安裝計算的，安裝套件時間大概只有5分鐘，am09:55~10:00，我裝好大約在am10:10)
+
+安裝好ArchLinux後，要做
+1.這是portage需要的
+
+代碼: 選擇全部
+    # pacman -Sy python
+
+
+2.上網瀏覽套件用的
+
+代碼: 選擇全部
+    # pacman -S lynx
+
+
+3.為了抓套件用的
+
+代碼: 選擇全部
+    # pacman -S wget
+
+
+
+
+然後﹕抓portage
+
+代碼: 選擇全部
+    # wget -cP /root ftp://ftp.isu.edu.tw/pub/Linux/Gentoo/snapshots/portage-latest.tar.bz2
+    # tar xvjf portage-latest.tar.bz2 -C /usr
+    # mkdir -v /usr/lib/portage
+    # mkdir -v /var/tmp/portage
+    # mkdir -v /usr/portage/distfiles
+
+
+以下詳細參考http://www.gentoo.org/proj/en/portage/doc/manually-fixing-portage.xml，不贅述。
+
+代碼: 選擇全部
+    # wget -P /usr/portage/distfiles http://distfiles.gentoo.org/distfiles/portage-2.1.1.tar.bz2
+    # cd /root
+    # mkdir portage-recover
+    # cd portage-recover
+    # tar xvfj /usr/portage/distfiles/portage-2.1.1.tar.bz2
+    # cd portage-2.1.1
+    # cp -vR pym bin /usr/lib/portage/
+    # cp -v cnf/make.globals /etc
+    # rm -vf /usr/lib/portage/bin/sed
+    # ln -sv /usr/lib/portage/bin/emerge /usr/bin/emerge
+
+
+這裡配置group文件
+
+代碼: 選擇全部
+    # cp -v /etc/group{,.bak}
+    # cat >> /etc/group << "EOF"
+      portage::250:portage
+      EOF
+
+
+配置passwd文件
+
+代碼: 選擇全部
+    # cp -v /etc/passwd{,.bak}
+    # cat >> /etc/passwd << "EOF"
+      portage:x:250:250:portage:/var/tmp/portage:/bin/fales
+      EOF
+
+
+配置make.conf文件，USE請留白，別填入任何東西。
+
+代碼: 選擇全部
+    # cat > /etc/make.conf << "EOF"
+      CHOST="i686-pc-linux-gnu"
+      CFLAGS="-O2 -march=pentium4 -mfpmath=sse -pipe -fomit-frame-pointer"
+      CXXFLAGS="${CFLAGS}"
+      USE=""
+      GENTOO_MIRRORS="ftp://ftp.isu.edu.tw/pub/Linux/Gentoo ftp://ftp.twaren.net/Linux/Gentoo"
+      SYNC="rsync://ftp.twaren.net/gentoo-portage"
+      EOF
+
+
+這裡等同於執行 # eselect profile set <num>，由於目前沒有eselect所以手工連結。
+
+代碼: 選擇全部
+    # ln -sv /usr/portage/profiles/default-linux/x86/2007.0/desktop /etc/make.profile
+
+
+
+以下是在做emerge時需要備用的，這個大家都知道，我就不解釋了，我第一次安裝portage的時候有用到，
+第二次理出關係後就沒用到，不過有備無患，以後還是會用到的^^
+
+代碼: 選擇全部
+    # mkdir -v /etc/portage
+    # cd /etc/portage
+    # touch package.keywords
+    # touch package.unmask
+
+
+配置ld.so.conf文件
+
+代碼: 選擇全部
+    # cat > /etc/ld.so.conf << "EOF"
+      /usr/local/lib
+      /opt/lib
+      EOF
+
+
+這是我第一次編譯到coreutils遇到的問題修正方法，第二次我繞過去了，不過這是早晚會編到的套件，一樣要修復。
+
+代碼: 選擇全部
+    # ln -sv /usr/bin/expr /bin
+
+
+最後﹕
+1.
+因為現在整個portage沒辦法上線更新，所以先做# emerge rsync，記得USE="-nls -acl -openmp"要加嘿!
+現在首要讓portage上線更新，不必要所有都編，這樣一加只要編兩個套件就好，一是popt另一個就是rsync。
+(我做到這裡時間是am 10:45)
+
+代碼: 選擇全部
+    # USE="-nls -acl -openmp" emerge -av rsync
+
+
+可以做一次emerge --metadata以保證 metadata 的格式符合 portage 2.1
+
+代碼: 選擇全部
+    # emerge --metadata
+
+
+2.
+安裝sandbox來修正沒有sandbox的錯誤。(這裡am 10:50)
+
+代碼: 選擇全部
+    # emerge -av sandbox
+
+
+3.
+到這裡大家都會了。(這裡am 11:02)
+
+代碼: 選擇全部
+    # emerge --sync
+
+
+4.
+更新 portage。
+
+代碼: 選擇全部
+    # emerge portage
+
+
+
+這就很容易把Arch 換成 Gentoo了 ^^。
+
+優點:
+很短的時間獲得可運行並配置好的系統，並且具有portage，不必長時間依賴install cd。我由開始安裝Arch到做完#emerge --sync總共花了1hr07min,其中在download 30幾M的portage就花了我20~min(adsl 256k)。
+
+缺點:
+由於檔案配置不儘相同，或許會有地雷存在，因此不建議新手使用，在VirtualBox玩玩可以。^^
+
+有圖有真相，我就po上螢幕抓圖。
+這是第一次安裝成功的圖

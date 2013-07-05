@@ -1,0 +1,138 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2013-04-21T07:01:03+08:00
+
+====== Linux terminfo ======
+Created 星期日 21 四月 2013
+
+  terminfo取代庞大的 /etc/termcap 文件来定制终端的外观和交互行为。 编译好的数据库文件在 /usr/share/terminfo 下，用 infocmp 命令来反编译输出各种终端类型的特性描述文件。如 infocmp vt100。 用 tic -c terminfo格式源文件  来校验，然后  tic -s terminfo格式源文件 来修改数据库。然后打开一个新终端，用 stty -a 来检查当前终端的性能参数。
+
+Example:
+
+如何修改 redhat 8.0 中 screen 虚拟终端的 terminfo 数据，让 ^？ ( 键盘代码 \177 )来替代 ^H 作为 backspace 键。否则会影响emacs 的 C-h 快捷键。其实在 xterm 里已经是这么做的了。
+
+修改并编译：
+
+$ su-
+
+# infocmp > tmp
+
+# sed 's/kbs\^H/kbs=\\177/' tmp > newinfo
+
+# tic -C newinfo
+
+# tic -s newinfo
+
+测试：
+
+# stty -a
+
+下面说明一下terminfo和termcap的历史及键盘在Unix和Linux中的仿真终端中使用。
+
+Teletypes and the Unix Culture
+在Unix系统中，许多约定基于20世纪70年代的技术，特别是，Unix 世界中的许多思想基于早期终端的特点，即： Teletype 和 VT100。在使用Teletype机器的时候，它们被称为TTY，这种习惯被Unix采纳，人们现在仍然使用 tty 作为Unix终端的符号。特别是在文档、程序、命令名称里。（tty，stty，getty）。
+因为输出意味着打印，所以Unix习惯使用单词 print 来表述信息的输出。即使信息在显示器上输出，也仍然如此。例如命令 pwd（print working directory）。
+
+Termcap, Terminfo and curses
+当Unix被设计成使用终端来访问主机系统的时候，Unix的开发人员需要解决的一个重要问题就是每种类型的终端都有自己的特征，并使用自己的命令集，并且这些命令的名称不尽相同。
+解决方法就是，将所有不同类型终端的描述收集到一个数据库中，当程序希望向终端发送命令时，它可以通过使用数据库中的信息以一种标准化的方式完成。
+第一个这样的系统由Bill Joy 创建，这个系统的名字为Termcap（terminal capabilities）。第一个使用Termcap的程序就是有Joy编写的 vi 编辑器。
+
+由于Termcap的使用比较复杂，伯克利的另一名学生 Ken Arnold 开发了一个程序界面curses（cursor addressing）。它用来执行屏幕现实管理所需的所有功能，同时对程序员隐藏细节。
+第一个使用curses和Termcap的程序是游戏：Rogue，一个基于文本的探险游戏。
+
+但随着新终端类型的不断涌现，Termcap的文件变得日益庞大，并且难以维护。为了提高curses的性能，贝尔实验室的程序员使用了一个新的工具：Terminfo（terminal information） 替换了Termcap。Terminfo将数据存储在一系列的文件中，每种终端类型一个文件。这些文件组织到26个命名为a - z 的目录中。它们保存在Terminfo的目录下。例如：Linux中的VT100的信息在 /lib/terminfo/v/vt100 中，它被链接到/usr/share/terminfo/v/vt100 上。不同的系统可能稍有差别。
+
+但是，Terminfo的问题在于贝尔实验室属于 AT&T 公司，它不同意发布源代码，为了克服这一限制，1982年，程序员 Pavel Curtis 开发了一个自由版本的curses，称之为：ncurses（new curses），1993年末，Eric Raymond 也加入到了ncurses的开发者行列中来。最终，ncurses 和 Terminfo 一起合并成一个不朽的标准。 Terminfo 已经永久取代了Termcap ，但为了兼容性，一些Unix仍然拥有Termcap文件。
+
+Termcap 的数据内容为文本文件，可以直接显示： less /etc/termcap
+Terminfo 的数据已经编译成了非文本格式，必须使用 infocmp 这个程序来读取数据并翻译成纯文本。例如：
+显示VT100 数据： infocmp vt100
+显示当前使用的终端的数据： infocmp
+
+实际上，现在常见的终端类型有四种：
+VT100，xterm，VT220（VT100的彩色版），linux（如果使用Linux系统，实质上它仍然是VT220）。
+Unix使用环境变量 TERM 记录正在使用的终端类型。用 echo $TERM 可以现实它的内容。
+
+Stopping a Program
+Unix提供了几种停止或暂停程序的信号：intr，quit，stop，susp。
+在多数系统上，intr的键是^C，即Ctrl+C，但有些系统使用<Delete>键。
+intr(interrupt)信号有两个用途。
+首先，它可以停止一个僵死的程序。按下Ctrl+C，程序将终止。但有些程序忽略了intr的信号，防止用户不小心按下Ctrl+C导致的意外。这称为 Trap 。
+其次，它可以取消程序的执行。例如：
+leoo@srv99:~$ sudo shutdown -t m 5
+
+The system is going DOWN to maintenance mode in 5 minutes!ov 5 07:16:02 2010
+^C
+Shutdown cancelled.
+
+另外一个键盘信号是： quit
+它通常使用 Ctrl+\ 来表示，与intr不同的是，^\ 不仅终止程序，还会让Unix为此时内存中的内容制作一份副本，保存在 core file 中，即 core dump。程序员可以使用工具分析该文件，以查找程序的问题。
+现在，由于有了更好的调试工具，在多数系统上，quit已经不在生成磁芯文件（core file）。如果出现了该文件，则意味着运行的程序出现了严重错误（比如段错误）而终止。一般情况下，它可以删除。
+
+
+stop 和 start
+
+Ctrl-S 和 Ctrl -Q，用来暂停和恢复屏幕的显示。这两个键来源与 Teletype ASR33，在ASR33上，Ctrl-Q发送XON码，这个代码打开纸带阅读机，而Ctrl-S 发送XOFF码，这个代码关闭纸带阅读机。
+
+The End of File Signal: eof
+Ctrl + D 发送EOF（end of file）信号，指示输入完成，如果程序等待输入，而此时发送EOF信号，则程序终止，这也是Ctrl+D可以退出SHELL的原因。
+
+为了避免不小心按键而退出SHELL，可以使用 IGNOREEOF 的环境变量。例如：
+IGNOREEOF=3
+该变量被设置成3，意味着系统在退出之前要按多少次Ctrl+D，SHELL才会真的退出。换句话说，也就是在第四次按下Ctrl+D的时候，SHELL才执行退出的动作，前三次被忽略。按下Ctrl+D的时候，SHELL会提示：
+leoo@srv99:~$ IGNOREEOF=3
+leoo@srv99:~$ Use "logout" to leave the shell.
+把 IGNOREEOF 设置为0 ，则关闭该特性。如果想一直使用这个特性，把它加入到.profile文件中。
+
+Korn SHELL
+使用如下命令：
+$ set -o ignoreeof
+$ ^D
+Use `exit' to leave ksh
+$
+以上命令在OpenBSD4.8下，默认情况下，ksh会抵消掉12次的^D的输入。
+关闭该特性的命令为：
+set +o ignoreeof
+
+C-SHELL
+使用如下命令：
+freebsd# echo $SHELL
+/bin/csh
+freebsd# set ignoreeof
+freebsd# ^D
+Use "logout" to logout.
+freebsd#
+以上命令在FreeBSD8.1下，默认情况下，C-shell抵消掉25次的^D的输入。
+关闭该特性的命令：
+unset ignoreeof
+显示当前值：
+echo $ignoreeof
+
+stty -a 可以现实当前的键盘映射。
+$ stty -a
+speed 38400 baud; 24 rows; 80 columns;
+lflags: icanon isig iexten echo echoe -echok echoke -echonl echoctl
+        -echoprt -altwerase -noflsh -tostop -flusho pendin -nokerninfo
+        -extproc -xcase
+iflags: -istrip icrnl -inlcr -igncr -iuclc ixon -ixoff ixany imaxbel
+        -ignbrk brkint -inpck -ignpar -parmrk
+oflags: opost onlcr -ocrnl -onocr -onlret -olcuc oxtabs -onoeot
+cflags: cread cs8 -parenb -parodd hupcl -clocal -cstopb -crtscts -mdmbuf
+cchars: discard = ^O; dsusp = ^Y; eof = ^D; eol = <undef>;
+        eol2 = <undef>; erase = ^?; intr = ^C; kill = ^U; lnext = ^V;
+        min = 1; quit = ^\; reprint = ^R; start = ^Q; status = <undef>;
+        stop = ^S; susp = ^Z; time = 0; werase = ^W;
+$ uname -a
+OpenBSD openbsd.example.com 4.8 GENERIC#136 i386
+$
+
+使用 stty 修改映射：
+修改KILL
+stty kill ^U
+stty erase ^H
+当然也可以将普通键映射到信号上。
+stty kill K
+但这样会有问题，当按下K键时，系统将删除刚键入的那行，事实上，最好使用默认的标准键赋值。
+
+

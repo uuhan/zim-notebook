@@ -1,0 +1,67 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2012-12-15T23:20:01+08:00
+
+====== vimgrep ======
+Created 星期六 15 十二月 2012
+
+vimgrep简单使用
+
+在gvim中可以使用vimgrep命令来实现多文件查找，具体使用方法，请看这里,这里主要记录一些查到后的一些操作：
+
+:cnext (:cn) 当前页下一个结果
+
+:cprevious (:cp) 当前页上一个结果
+
+:clist (:cl) 打开quickfix窗口，列出所有结果，不能直接用鼠标点击打开，只能看
+
+:copen (:cope) 打开quickfix窗口，列出所有结果，可以直接用鼠标点击打开
+
+:ccl[ose] 关闭 quickfix 窗口。
+
+ctrl + ww 切换编辑窗口和quickfix窗口，在quickfix里面和编辑窗口一样jk表示上下移动，回车选中进入编辑窗口
+GVIM实现多文件的查找和替换
+文件查找
+
+对于多文件中的查找来说，比较容易，vimgrep是vim自带的一个工具，类似于grep的用法就可以实现。比如要在当前目录查找word，使用如下:
+
+:vimgrep word *
+
+如果想要递归查找所有下级目录里面，那么就用:
+
+:vimgrep word **
+
+另外，如果想要在使用是快捷查找当前光标下的字母，则只需要在vimrc中添加如下代码：
+
+"对搜索的设置
+map ft :call Search_Word()<CR>:copen<CR>
+function Search_Word()
+let w = expand("<cword>") " 在当前光标位置抓词
+execute "vimgrep " w " *"
+endfunction
+
+可点击这里，查看更多vimgrep的知识！
+多文件替换
+
+实际上只要如下两个命令即可1):
+
+:args *.txt
+:argdo %s/hate/love/gc | update
+
+脚本解释
+
+:args *.txt
+
+这样写会扫描当前目录下的.txt文件，并加入到参数列表。但是这样写只会稻苗当前目录，如果想要递归扫描所有下级目录的话，用
+
+:args **/*.txt
+
+如果只想扫描下一级目录（即不扫描当前目录）的话，用
+
+:args */*.txt
+
+即可。
+
+:argdo %s/hate/love/gc | update
+
+是将参数列表中的所有文件的hate提换成love，并写入硬盘2)。

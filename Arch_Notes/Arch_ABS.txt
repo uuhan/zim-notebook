@@ -1,0 +1,28 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2012-12-03T14:39:11+08:00
+
+====== Arch ABS ======
+Created 星期一 03 十二月 2012
+
+ Arch的ABS系统 (2010-04-09 10:18)
+分类： ARCH
+
+
+ABS是什么？
+
+ABS指的是Arch的打包系统(the Arch Build System)。这是一种用于从源代码编译软件的类ports系统。在Arch中，pacman专门管理二进制软件包(包括那些由ABS创建的)，而 ABS则专门负责把源代码编译成可安装的.pkg.tar.gz软件包。
+类ports系统又是什么？
+
+'Ports'是FreeBSD使用的一种系统，它对源码包进行下载、解压缩、打补丁、编译和安装等一系列操作。一个“port”仅仅是指用 户电脑上的一个目录，根据即将安装的相应软件来命名，包含一些文件来指导源码的下载和编译安装，典型的方式是找到那个目录(或者说port)，进 行make和make install。然后系统就会下载、编译和安装你想要的软件了。
+ABS的概念与之相似
+
+ABS由一个目录树构成(the ABS Tree)，位于/var/abs。它包含许多子目录，每个子目录都属于某一类别，都以相应的可创建的软件包命名。你可以把一个子目录称为一个 “ABS”，就像称呼“port“那样。这些“ABS”(或者说子目录)并不包含软件包或源代码, 相对地，它包含一个PKGBUILD文 件(有时也会有其它文件)。PKGBUILD是一个简单的脚本——文本文件（包含对编译和打包过程的指示、包含源码包的下载地址）。ABS最重要的 部分就是PKGBUILD。
+漫游ABS
+
+用 pacman -S abs 安装abs。以root身份运行'abs'，通过与Arch Linux服务器同步来创建ABS树。举例来说，如果你打算从源代码编译nano，就把/var/abs/core/base/nano复制到某一目录， 然后到那个目录里运行makepkg'。就这么简单。Makepkg会试着读取并执行包含在PKGBUILD中的指示。适当的源码包将被自 动下载和解压，根据/etc/makepkg.conf指定的CFLAGS编译，最后压缩成扩展名为.pkg.tar.gz的软件包，每一步都依照 PKGBUILD中相应的指示来进行。安装只需要运行pacman -U nano.pkg.tar.gz。卸载同样由pacman来解决。
+
+PKGBUILD和其它的文件当然可以被定制，以满足你的需求。你也可以用ABS makepkg功能从外来的代码编译你自己的软件包。(参照/var/abs/core/下原始的PKGBUILD和install文件)
+
+
+因为发现自己安装的vim 有些功能没有，只有重新编译，所以看了ABS的wiki，感觉有ABS来编译软件是挺方便的，只要改一下PKGBUILD文件内容，就可以达到你自己想要的功能的编译，但最好不要动ABS里面的原文件，把你要重新编译的包 从ABS 里面复制一份出来，再修改PKGBUILD 。

@@ -1,0 +1,318 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2012-11-30T13:10:51+08:00
+
+====== Mplayer ======
+Created 星期五 30 十一月 2012
+
+MPlayer
+Contents
+ [hide] 
+
+    1 About
+    2 Packages
+    3 List of all supported USE flags
+        3.1 Audio and video codecs
+        3.2 Audio and video output
+        3.3 Hardware support
+        3.4 Optional features
+    4 Choosing your USE flags
+        4.1 Audio/video USE flags
+        4.2 DVD support
+        4.3 MPlayer GUI
+        4.4 MPlayer CLI using framebuffer
+        4.5 Hardware USE flags
+        4.6 Codecs
+    5 Emerge MPlayer
+    6 XvMC
+    7 Tips and Tricks
+        7.1 MPlayer in Firefox
+        7.2 Codecs/settings used in a container
+        7.3 MPlayer with a multi-tuner DVB card
+            7.3.1 Make the channel list
+                7.3.1.1 DVB-T
+                7.3.1.2 DVB-S
+            7.3.2 Enjoy Watching
+    8 Links
+
+[edit] About
+
+MPlayer is a high quality media player with a rich set of options that can playback almost every media file you can throw at it, similar to VLC. This guide explains how to setup MPlayer on your Gentoo system. This page provides some documentation for the most common uses and covers some lesser-known features that may come in handy. Feel free to add your own tips and tricks. Examples are also welcome.
+
+Before installing MPlayer, it's important to see what USE flags you have set, because they will in large part determine the functionality of MPlayer. Some codecs and options are only installed with certain USE flags.
+[edit] Packages
+
+There is the portage ebuild media-video/mplayer, with snapshots of svn://svn.mplayerhq.hu/mplayer/trunk. It is also possible to choose between two other packages in the multimedia Overlay:
+
+    media-video/mplayer, with snapshots of svn://svn.mplayerhq.hu/mplayer/trunk with optional ffmpeg-mt patch.
+    media-video/mplayer2, with snapshots of git://repo.or.cz/mplayer.git. This fork has several useful features:
+        Multithreaded ffmpeg.
+        Ability to change many settings staying paused.
+        Matroska ordered (aka external, linked) chapters support.
+        Matroska editions support, commit.
+        Ability to build with shared ffmpeg libraries. 
+
+Official comparison with MPlayer.
+
+Discussion at forums.gentoo.org
+[edit] List of all supported USE flags
+
+To see a list of USE options recognised by mplayer:
+emerge -pv mplayer
+
+The following lists the most important of these flags.
+[edit] Audio and video codecs
+
+    a52 decoding ATSC A/52 streams used in DVD. Needed for AC3.
+    aac enables FAAD2 (open source MPEG-4 and MPEG-2 AAC decoder) support
+    amrnb, amrwb enables support for Adaptive Multi-Rate Audio encoding (required for playing files recorded by many mobile phones) (on newer mplayer opencore-amr)
+    dts Enables libdts (DTS Coherent Acoustics decoder) support, found on some DVDs
+    live enables Live.com streaming media support
+    mad adds support for the MAD mp3 decoder
+    mp2 adds support for MP2 audio encoding using TwoLame
+    mp3 adds support for MP3 audio encoding
+    musepack adds support for the musepack audio codec
+    real uses RealPlayer codecs for audio/video playback
+    theora to play Ogg Theora video files
+    vorbis add support for Ogg Vorbis playback and encoding
+    win32codecs installs the binary codecs
+    x264 support for encoding X264/AVC (MPEG-4) streams
+    xanim adds support for XAnim
+    xvid enables support for XviD encoding 
+
+[edit] Audio and video output
+
+    aalib adds support for ASCII output (see libcaca for color)
+    alsa adds support for ALSA (Advanced Linux Sound Architecture) audio output/recording
+    arts adds support for audio output through aRts
+    dga Adds DGA Support (Xfree86) (DGA=Direct Graphic Access)
+    directfb adds framebuffer support through the DirectFB layer
+    esd adds support for audio output through EsounD
+    fbcon adds framebuffer output option for video
+    ggi adds support for the LibGGI graphics card drivers
+    gif lets you encode to and from GIF images
+    jack enables JACK sound support
+    jpeg lets you encode to and from JPEG images
+    libcaca adds support for color ASCII output (see aalib for non-color ASCII)
+    nas enables Network Audio System support
+    opengl lets you use OpenGL for video output
+    oss adds OSS audio output/recording support
+    png lets you encode to and from PNG images
+    sdl adds SDL (Simple Direct Layer) as an audio and/or video output wrapper
+    svga adds framebuffer support through SVGAlib
+    xinerama adds support for dual-screen output (or something)
+    xv direct video output format 
+
+[edit] Hardware support
+
+    3dnow builds with 3DNow! support
+    3dnowext builds with extended 3DNow! support
+    cdparanoia adds paranoia support when ripping/playing CDs (needed for cd-audio playing)
+    dvb to watch/record TV using DVB (Digital Video Broadcast) format, not NTSC (see also v4l and v4l2)
+    dvd will let you rip/play DVDs
+    i8x0 Enables support for the i8x0 xvmc video driver
+    joystick enables joystick support
+    lirc uses LIRC library for remote controls
+    matrox adds support for Matrox G200/G4x0/G550
+    mmx builds with MMX support
+    mmxext builds with MMX2 support
+    rtc adds support for RTC (/dev/rtc)
+    sse adds support for SSE
+    sse2 adds support for SSE2
+    ssse3 adds support for SSSE3
+    v4l and v4l2 to watch/record TV (see also dvb)
+    xvmc Enables X-Video Motion Compensation support 
+
+[edit] Optional features
+
+    bidi adds support for FriBiDi libraries
+    bl adds support for blinkenlights
+    color-console will make the output of MPlayer in color format (and will likely break any scripts parsing it)
+    doc installs extra documentation
+    encode will install MEncoder
+    gtk will also install an MPlayer GUI (gmplayer)
+    ipv6 adds support for IPv6
+    lzo Enables LZO compression support
+    md5sum allows you to play a file and output to MD5 hashes
+    samba allows you to play files over a Samba share directly
+    truetype enables FreeType font rendering support
+    xscreensaver enables support for MPlayer to stop the screensaver on playback 
+
+[edit] Choosing your USE flags
+
+A reasonable question might be: which USE flags do I want to install? The answer depends on your situation.
+
+If you want to enable support for all the most common video codecs that MPlayer has, the USE Flags you would use are: a52 aac dts live mp3 quicktime real theora vorbis.
+[edit] Audio/video USE flags
+
+You probably already have your audio USE flags setup, so for most general uses, there's not much to be said here.
+
+For video output, there are some generic flags that you should add: X opengl sdl xv.
+
+MPlayer has several ways to output video to the screen, using mplayer -vo. Xv is the fastest and will be the default.
+
+If you enjoy watching movies on the console (no X session), then the optional flags you would want to enable are: directfb fbcon svga.
+
+Each one actually adds support for a different framebuffer library. DirectFB and fbcon will need framebuffer support enabled in the kernel, while svga requires an external module, svgalib_helper (media-libs/svgalib). See MPlayer on Framebuffer for more information.
+
+If you want to watch videos in the terminal without a framebuffer, you can enable these flags: aalib libcaca.
+
+AAlib and Libcaca will both output video to the terminal. Libcaca is in color but AAlib is not.
+[edit] DVD support
+
+If you have a DVD-ROM or DVD-RW in your computer, then make sure to add these flags: a52 dts dvd.
+
+Most DVDs use AC3 audio (Dolby Digitial), and playback support is provided by liba52 (Provided by USE Flag a52). Some DVDs will also provide DTS as well, but is not as common.
+
+Alternately, use the following recommendation to enable menu navigation support: [1]
+[edit] MPlayer GUI
+
+MPlayer will play in GNOME with its own UI. You can also install a graphical program called GMPlayer, which is a gtk application. Just add gmplayer to your USE flags.
+Warning: GMplayer has been deprecated by upstream, and will likely be removed from the ebuild or unsupported by Gentoo in the future. There are a few other frontends if you would like to try them as well: media-video/gnome-mplayer, media-video/kmplayer and media-video/smplayer
+[edit] MPlayer CLI using framebuffer
+Warning: This section is not complete and should be reviewed
+
+Follow Framebuffer to get Framebuffer working, after this, you can run
+
+mplayer -vo [framebuffer driver] -zoom -fs -xy [framebuffer dimention] [filename.avi]
+
+Example
+
+mplayer -vo fbdev -zoom -fs -xy 1280 foo.avi
+
+[edit] Hardware USE flags
+
+You can greatly improve MPlayer's performances (in my experience, by up to +40%!) by recompiling it with appropriate CPU-related USE flags. Run mplayer without any parameters, and look for something like this:
+mplayer
+
+CPU: Advanced Micro Devices Athlon 4 /Athlon MP/XP Palomino 1541 MHz (Family: 6, Stepping: 2)
+Detected cache-line size is 64 bytes
+MMX supported but disabled
+MMX2 supported but disabled
+SSE supported but disabled
+3DNow supported but disabled
+3DNowExt supported but disabled
+CPUflags:  MMX: 0 MMX2: 0 3DNow: 0 3DNow2: 0 SSE: 0 SSE2: 0
+Compiled for x86 CPU with extensions:
+
+As you can see in this case, none of the supported CPU-features have been enabled; so you can recompile MPlayer with the following USE flags: mmx mmxext sse 3dnow 3dnowext.
+Note: The mplayer build system will automatically detect your CPU settings if you allow it. Therefore, the safest thing to do is enable all of the optimization USE flags and let the script detect them. If you disable the use flags, then it will forcibly disable support for that optimization, and possibly break your build. In other words, add mmx mmxext sse sse2 ssse3 3dnow 3dnowext to your USE flags for this ebuild, and if your box supports it, it will work automatically.
+[edit] Codecs
+
+Old versions of mplayer have a dependency on media-libs/win32codecs, which is a collection of codecs originally designed for 32-bit Windows systems. MPlayer can use these codecs to playback formats such as Windows Media Video, RealPlayer, and QuickTime. There is a much longer list of codecs that are also supported, but are not as common or well-known. win32codecs will install the "all" codec package.
+
+win32codecs also has an optional quicktime USE flag that you can enable, if you want to be able to playback most QuickTime movies.
+
+It's important to note that there is already native support for most of these codecs in MPlayer already, and most people will not need win32codecs installed for the majority of their basic video playback needs.
+
+For those using amd64, there is a binary package of 64-bit binary codecs for some Real codecs, packaged in media-libs/amd64codecs.
+[edit] Emerge MPlayer
+
+mplayer is probably the package with more compile time options than any other.
+
+Since most of these USE options only concern mplayer it makes sense to put them in /etc/portage/package.use as an entry for mplayer rather than adding them to /etc/make.conf as you would for system wide options.
+
+Once you've chosen all your USE options, make sure everything looks alright, then emerge the package.
+emerge mplayer
+[edit] XvMC
+
+XvMC output can be used to reduce CPU usage while playing MPEG2 videos. It needs to be supported by the graphics hardware and driver, one driver supporting this is the nvidia binary driver.
+
+The file /etc/X11/XvMCConfig should exist and its contents should point to your libXvMC, for example in the case of nvidia's binary driver this should be libXvMCNVIDIA_dynamic.so.1:
+File: /etc/X11/XvMCConfig
+
+/usr/lib/libXvMCNVIDIA_dynamic.so.1
+
+To correctly set your XvMC settings, you can run
+
+emerge -av eselect-xvmc
+eselect xvmc
+
+XvMC can now be used like this:
+mplayer dvd:// -vo xvmc -vc ffmpeg12mc
+Note: So far, nVidia is the only driver that supports this playback method
+Note: A list of supported drivers can be found on MythTV's official website
+[edit] Tips and Tricks
+
+MPlayer integration with your desktop gives you its potencial and flexibility without the cost in resources of a GUI user interface.
+[edit] MPlayer in Firefox
+
+Firefox multimedia file extensions can be associated with a bash script that plays the content of the file in a terminal using MPlayer. For example, to play m3u files you can create the following script:
+File: /usr/local/bin/Mplayer_m3u.sh
+
+#!/bin/bash
+urxvtc -e mplayer -playlist $1
+
+It uses the urxvtc client, improving memory usage and start-up time. The association of m3u file extensions with this script in Firefox will play the playlist in a low-resources terminal context.
+[edit] Codecs/settings used in a container
+
+midentify, from MPlayer, gives information on containers and codecs (idea an example from this post):
+Code: midentify Alice\ in\ Wonderland.mp4 | egrep "FORMAT|CODEC"
+
+ID_VIDEO_FORMAT=H264
+ID_AUDIO_FORMAT=MP4A
+ID_VIDEO_CODEC=ffh264
+ID_AUDIO_CODEC=ffaac
+
+[edit] MPlayer with a multi-tuner DVB card
+
+The problem is than, when using multiple dvb tuners, MPlayer want to search for the first tuner in the first dvb card, for the second tuner in the second one, and so on. It is hard-coded into MPlayer and the only thing we can do about this is to write a patch for mplayer. In short and with a multi-tuner dvb card, MPlayer will be able to only find and use the first tuner (typically /dev/dvb/adapter0/frontend0).
+
+It is several ways to solve this issue. A workaround is to use udev to make a fake second dvb card with the second hardware tuner as first tuner. This is only a workaround and it can cause problems when several programs try to access the same hardware with 2 different device files. So, we will skip it.
+
+The second way is a 3 steps setup. 1) Make a channel list with scan (dvbscan on gentoo). 2) Tune the wanted tuner with tzap and szap. 3) Play the channel with mplayer using the coresponding dvr* device.
+
+Another way to fix this issue, and this would be a better one, would be to write a patch for mplayer and test it. That way, we could use mplayer directly with a single command. See Playing trouble with multi-tuner dvb card.
+[edit] Make the channel list
+
+I have a card that have several tuners: fm radio, analog tv, dvb-t and dvb-s. According to mplayer documentation, the channel list can be ~/.mplayer/channels.conf, or alternatively ~/.mplayer/channels.conf.sat, ~/.mplayer/channels.conf.ter, ~/.mplayer/channels.conf.cbl and ~/.mplayer/channels.conf.atsc for respectively Satellite, Terrestrial, Cable and ATSC. We will not use them but use another location instead:
+mkdir ~/.tzap
+
+We will make the channels list for dvb-t and dvb-s.
+[edit] DVB-T
+
+We will use dvbscan from the linuxtv-dvb-apps package. Be aware than gentoo change the name of the scan software into dvbscan. That imply that the installed dvbscan is in fact scan from linuxtv-dvb-apps, and that dvbscan from linuxtv-dvb-apps is not installed. See this bug report. If you use the patch from this bug report to make your own ebuilds, emerge will install both scan softwares, scan will be renamed into scan-dvb, and you will have to replace dvbscan by scan-dvb in all the following commands using it.
+emerge linuxtv-dvb-apps
+
+Find the correct frequency list for your region and type of reception. These files are stored under /usr/share/dvb/. For reception with DVB-T in Switzerland, you can use /usr/share/dvb/dvb-t/ch-All The dvb-s tuner is the first tuner of my card (the first adapter), the dvb-t tuner is the second one. For dvbscan the card is the adapter 0 and the tuner are respectively 0 and 1.
+dvbscan /usr/share/dvb/dvb-t/ch-All -a 0 -f 1 -d 1 -o zap | tee ~/.tzap/channels_ter.conf
+[edit] DVB-S
+
+We will do another channel search for Astra 19.2E using the file /usr/share/dvb/dvb-s/Astra-19.2E, and we don't want the scrambled channels (mplayer will wait forever with them).
+dvbscan /usr/share/dvb/dvb-s/Astra-19.2E -x 0 -t 1 -a 0 -o zap | tee ~/.tzap/channels_sat.conf
+
+This will take a while with such a satellite. Don't be alarmed by the messages "WARNING: >>> tuning failed!!!". They append when a frequency is reserved but not currently in use, or used for something else than TV.
+
+When this run is finished, we can sort the channels by alphanumeric order:
+sort -d -o ~/.tzap/channels.conf.sat.tmp ~/.tzap/channels.conf.sat
+mv ~/.tzap/channels.conf.sat.tmp ~/.tzap/channels.conf.sat
+
+We can make another channels list for the radio channels:
+dvbscan /usr/share/dvb/dvb-s/Astra-19.2E -x 0 -t 2 -a 0 -o zap | tee ~/.tzap/channels_sat_radio.conf
+[edit] Enjoy Watching
+
+For watching a channel, we have to run 2 processes in 2 different terminals.
+
+To watch the channel named "RTS Un" in channels.conf.ter (dvb-t channel):
+tzap -a 0 -f 1 -d 1 -r "RTS Un" -c channels_ter.conf
+
+and
+mplayer /dev/dvb/adapter0/dvr1
+
+or
+cat /dev/dvb/adapter0/dvr1|mplayer -
+
+Don't forget the final "-", or it won't work. It tell mplayer that this is the end of options. Without it, mplayer will espect a filename to play and quit.
+
+To watch the channel named "Cubavision Internacional" in channels_sat.conf (dvb-s channel):
+szap -a 0 -r "Cubavision Internacional" -c channels_sat.conf
+
+and
+mplayer /dev/dvb/adapter0/dvr0
+
+or
+cat /dev/dvb/adapter0/dvr0|mplayer -
+
+The advantages of the first mplayer's command is than we are able to change the channel with tzap (or szap) without restarting mplayer, and if the signal is becoming of bad quality, mplayer will wait.
+
+Also, mplayer can try to seek on the device with this first mplayer's command, and this is not dangerous for your hardare (according to awwalls on irc: #linuxtv@freenode). 

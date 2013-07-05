@@ -1,0 +1,8 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2013-04-14T18:14:52+08:00
+
+====== thunar缩略图 ======
+Created 星期日 14 四月 2013
+
+tumbler

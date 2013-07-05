@@ -1,0 +1,405 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2012-12-29T05:40:04+08:00
+
+====== qemu联网 ======
+Created 星期六 29 十二月 2012
+
+user mode network :
+这种方式实现虚拟机上网很简单，类似vmware里的nat，qemu启动时加入-user-net参数，虚拟机里使用dhcp方式，即可与互联网通信，但是这种方式虚拟机与主机的通信不方便。
+
+tap/tun network :
+这种方式要比user mode复杂一些，但是设置好后 虚拟机<-->互联网 虚拟机<-->主机 通信都很容易
+这种方式设置上类似vmware的host-only,qemu使用tun/tap设备在主机上增加一块虚拟网络设备(tun0),然后就可以象真实网卡一样配置它.
+
+首先内核中支持tap/tuns设备：
+Device Drivers --->
+Networking support --->
+[M] Universal TUN/TAP device driver support
+如果当前内核没有支持，可以重新只编译相应模块加入，方法很简单：
+
+将当前内核配置文件cp到内核源码目录下:
+[root@LFS ~]#cp /boot/config-[kernel-version] /usr/src/linux
+[root@LFS ~]#cd /usr/src/linux
+配置内核，将TUN/TAP选择模块(M)，如上所示:
+[root@LFS ~]#make menuconfig
+重新只编译模块(M),不编译核心(*)支持的东东:
+[root@LFS ~]#make modules
+编译好后在/usr/src/linux/drivers/net下可以找到tun.ko:
+[root@LFS net]#ls -l /usr/src/linux/drivers/net/tun.ko
+-rw-r--r-- 1 root root 11116 Mar 23 20:29 /usr/src/linux/drivers/net/tun.ko
+[root@LFS net]#
+将它cp到当前内核的模块目录的相应位置：
+[root@LFS net]#cp /usr/src/linux/drivers/net/tun.ko /lib/modules/`uname -r`/kernel/drivers/net
+重新建立模块依赖关系：
+[root@LFS net]#depmod
+现在就可以加载它了 :
+[root@LFS net]#modprobe tun
+检查一下：
+[root@LFS net]#lsmod |grep tun
+tun 8704 0
+[root@LFS net]#
+OK. 成功不重新编译整个内核加入特殊模块支持
+
+如果你的xx卡不被内核支持，又可以编译成模块，自己怕重新编译内核后出问题就可以用这个办法只编译自己需要的模块，然后手动安装到相应位置，再加载它。
+这样编译速度要也比编译整个内核快，不会对系统有任何损害，就可以使用上XX卡喽。^_^
+
+要注意三点：
+1.内核源码必须与当前内核版本完全一致，否则编译出的模块是不能用的。
+2.注意只make modules(编译模块),没有make modules_install(自动安装模块到/lib/modules下)
+3.加载新编译的模块前必须先运行depmod，否则modprobe找不到它
+
+其实使用当前内核配置文件(/boot/config-[kernel-version]),只加入自己需要的模块，不做任何其他改，make modules_install应该也不会有问题的。
+不过最稳妥的办法还是手动安装它,控制权在自己手里更踏实嘛 :-)
+
+OK,转回qemu上网问题 :)
+
+如果使用udev管理设备(通常2.6.x内核的发行版都已经使用udev),当modprobe tun后就会自动建立/dev/net目录，并创建出tun设备，做好相关链接：
+[root@LFS net]#ls -l /dev/net/tun
+lrwxrwxrwx 1 root root 6 Mar 25 15:35 /dev/net/tun -> ../tun
+[root@LFS net]#
+
+如果很不幸，你没看到它，就需要自己手动做这些工作了 :(
+[root@LFS ~]#mkdir /dev/net
+[root@LFS ~]#mknod /dev/net/tun c 10 200
+OK,相关设备已经准备好了，还需要一个tun/tap的初始化脚本 :
+/etc/qemu-ifup :
+#!/bin/sh
+/sbin/ifconfig $1 172.20.0.1
+再给予qemu-ifup x执行权限放在/etc下就可以了。
+这个脚本只能root用户执行，如果需要普通用户使用qemu，就需要改成sudo /sbin/ifconfig .....再设置sudo相关权限。
+启动qemu后，它会在主机上增加一块虚拟网络设备(tun0):
+[root@LFS ~]#ifconfig tun0
+tun0 Link encap:Ethernet HWaddr 0A:D3:8A:5D:97:CD
+inet addr:172.20.0.1 Bcast:172.20.255.255 Mask:255.255.0.0
+UP BROADCAST RUNNING MULTICAST MTU:1500 Metric:1
+RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+collisions:0 txqueuelen:500
+RX bytes:0 (0.0 b) TX bytes:0 (0.0 b)
+[root@LFS ~]#
+现在就可以启动qemu配置虚拟机网络参数了，和vmware host-only一样:
+ip与tun0相同网段,gateway为tun0 ip 其余参数与tun0相同,dns与主机相同：
+tun0 : ip :172.20.0.1 broadcast:172.20.255.255 netmask :255.255.0.0
+qemu : ip :172.20.0.100 broadcast:172.20.255.255 netmask :255.255.0.0 gateway:172.20.0.1
+
+与host-only一样，这样只实现了虚拟机<---->主机间通信,还需要设置router,nat才可以连上互联网
+[root@LFS ~]#echo 1 > /proc/sys/net/ipv4/ip_forward
+[root@LFS ~]#iptables -t nat -A POSTROUTING -o eth0 -s 172.20.0.0/24 -j MASQUERADE
+[root@LFS ~]#
+
+OK，虚拟机<--->主机 虚拟机<---->互联网通信 都完成啦
+快去做网络实验吧。
+
+
+
+
+
+
+
+本来最先是在 Gentoo 上实现 KVM 的，后来又在 Debian 上玩了玩：http://blog.csdn.net/cenziboy/article/details/6957890
+
+后来觉得还是有必要再总结总结，只当是复习罢了，于是乎出现了此文。
+
+一 安装前准备
+
+1. KVM需要硬件支持，并在BIOS中开启CPU虚拟化功能
+
+
+2. 配置 kernel 
+
+kvm 模块
+
+[plain] view plaincopyprint?
+
+	[*] mVirtualization --->  
+        --- Virtualization  
+        <M> Kernel-based Virtual Machine (KVM) support  
+        <M>   KVM for Intel processors support  #我是 intel CPU  
+        < >   KVM for AMD processors support  
+
+
+
+3. TUN/TAP 模块，桥接网络要用到
+
+[plain] view plaincopyprint?
+
+    Device Drivers --->  
+		[*] Network device support --->  
+                <M> Universal TUN/TAP device driver support  
+      
+    Networking support --->  
+        Networking options --->  
+            <*> 802.1d Ethernet Bridging  
+            <*> 802.1Q VLAN Support  
+
+
+
+4. 半虚拟化（可选，根据自己需求）
+
+[plain] view plaincopyprint?
+
+    Processor type and features --->  
+		[*] Paravirtualized guest support  --->  
+				[*] KVM paravirtualized clock                                                       
+				[*] KVM Guest support                                                               
+                -*-   Enable paravirtualization code  
+				[*] Paravirtualization layer for spinlocks  
+
+
+编译并安装内核（模块）
+
+[plain] view plaincopyprint?
+
+    # make  
+    # make install  
+    # make modules_install  
+
+
+二 安装qemu 
+
+kvm是内核模块，用户无法直接使用。这里就要借助 qemu ( 也叫 kvm 的前段工具）来使用 kvm
+
+1. 先看看 qemu-kvm ：
+
+[plain] view plaincopyprint?
+
+    # emerge -pv qemu-kvm  
+      
+    These are the packages that would be merged, in order:  
+      
+    Calculating dependencies... done!  
+    [ebuild   R    ] app-emulation/qemu-kvm-0.15.1-r1  USE="aio alsa jpeg ncurses png pulseaudio sdl ssl vhost-net -bluetooth -brltty -curl -debug (-esd) -fdt -hardened -nss -qemu-ifup (-rbd) -sasl -spice -threads -vde -xattr -xen" QEMU_SOFTMMU_TARGETS="x86_64 -arm -cris -i386 -m68k -microblaze -mips -mips64 -mips64el -mipsel -ppc -ppc64 -ppcemb -sh4 -sh4eb -sparc -sparc64" QEMU_USER_TARGETS="-alpha -arm -armeb -cris -i386 -m68k -microblaze -mips -mipsel -ppc -ppc64 -ppc64abi32 -sh4 -sh4eb -sparc -sparc32plus -sparc64 -x86_64" 0 kB  
+      
+    Total: 1 package (1 reinstall), Size of downloads: 0 kB  
+       
+
+当然，我的系统上已经安装过了[ ebuild  R ]
+
+
+2. 然后再改变USE、QEMU_SOFTMMU 和 QEMU_USER_TARGETS 变量看看（对照两次参数与结果）：
+
+[plain] view plaincopyprint?
+
+    # USE="-jpeg -png" QEMU_SOFTMMU="i386" QEMU_USER_TARGETS="i386 x86_64" emerge -pv qemu-kvm  
+      
+    These are the packages that would be merged, in order:  
+      
+    Calculating dependencies... done!  
+    [ebuild   R    ] app-emulation/qemu-kvm-0.15.1-r1  USE="aio alsa ncurses pulseaudio sdl ssl vhost-net -bluetooth -brltty -curl -debug (-esd) -fdt -hardened -jpeg* -nss -png* -qemu-ifup (-rbd) -sasl -spice -threads -vde -xattr -xen" QEMU_SOFTMMU_TARGETS="x86_64 -arm -cris -i386 -m68k -microblaze -mips -mips64 -mips64el -mipsel -ppc -ppc64 -ppcemb -sh4 -sh4eb -sparc -sparc64" QEMU_USER_TARGETS="i386* x86_64* -alpha -arm -armeb -cris -m68k -microblaze -mips -mipsel -ppc -ppc64 -ppc64abi32 -sh4 -sh4eb -sparc -sparc32plus -sparc64" 0 kB  
+      
+    Total: 1 package (1 reinstall), Size of downloads: 0 kB  
+
+
+
+3. 当然，去掉 emerge 后面的 -pv 就可以安装了。如下(根据自己需要来改变编译条件 USE, QEMU_SOFTMMU 和 QEMU_USER_TARGETS )：
+
+[plain] view plaincopyprint?
+
+    # emerge qemu-kvm    
+
+
+三 开始
+
+1. 为了让普通用户也能使用kvm ,添加用户至 kvm 用户组
+
+[plain] view plaincopyprint?
+
+    # gpasswd -a <用户名> kvm  
+
+
+2. 创建虚拟磁盘
+
+[plain] view plaincopyprint?
+
+    qemu-img create -f qcow2 gentoo.img 10G  
+
+
+
+四  桥接网络
+
+因为安装某些系统( Gentoo )需要网络，所以就先配置好网络
+
+1. 编辑 /etc/conf.d/net (此处只给出了 静态IP 的方法，其他的本人没做过）
+
+[plain] view plaincopyprint?
+
+    # config_eth0="10.65.10.80/16"  #注释掉之前的网络接口 eth0  
+    # routes_eth0="default via 10.65.255.254" #注释掉之前的 网关  
+      
+    config_eth0="null"  
+      
+    bridge_br0="eth0"  
+    config_br0="10.65.10.80/16"   #原来 eth0 的地址  
+    brctl_br0="setfd 0 sethello 30 stp off"  
+    routes_br0="default via 10.65.255.254"  
+
+
+2. 安装桥接网络工具：
+
+net-misc/bridge-utils:  命令 brctl 要使用
+sys-apps/usermode-utilities:  命令 tunctl 要使用
+
+[plain] view plaincopyprint?
+
+    # emerge bridge-utils  
+    # emerge usermode-utilities  
+
+
+3. 创建 br0 ,并设置起开机启动
+
+[plain] view plaincopyprint?
+
+    # cd /etc/init.d  
+    # ln -s net.lo net.br0  
+    # rc-update add net.br0 default  
+      
+    # rc-update del net.eth0    # 移除 eth0 开机启动  
+
+
+4. 重启网络
+
+[plain] view plaincopyprint?
+
+    # rc-service net.br0 restart  
+
+
+看看网络可用不，如下图所示就可以了，否则就有问题了
+
+[plain] view plaincopyprint?
+
+    # ifconfig  
+    br0       Link encap:Ethernet  HWaddr 18:03:73:af:66:99    
+              inet addr:10.65.10.80  Bcast:10.65.255.255  Mask:255.255.0.0  
+              UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1  
+              RX packets:137 errors:0 dropped:44 overruns:0 frame:0  
+              TX packets:53 errors:0 dropped:0 overruns:0 carrier:0  
+              collisions:0 txqueuelen:0   
+              RX bytes:17364 (16.9 KiB)  TX bytes:6562 (6.4 KiB)  
+      
+    eth0      Link encap:Ethernet  HWaddr 18:03:73:af:66:99    
+              UP BROADCAST RUNNING PROMISC MULTICAST  MTU:1500  Metric:1  
+              RX packets:41495 errors:0 dropped:0 overruns:0 frame:0  
+              TX packets:13952 errors:0 dropped:0 overruns:0 carrier:0  
+              collisions:0 txqueuelen:1000   
+              RX bytes:15108839 (14.4 MiB)  TX bytes:2736817 (2.6 MiB)  
+              Interrupt:20 Memory:7ea00000-7ea20000   
+      
+    lo        Link encap:Local Loopback    
+              inet addr:127.0.0.1  Mask:255.0.0.0  
+              UP LOOPBACK RUNNING  MTU:16436  Metric:1  
+              RX packets:4 errors:0 dropped:0 overruns:0 frame:0  
+              TX packets:4 errors:0 dropped:0 overruns:0 carrier:0  
+              collisions:0 txqueuelen:0   
+              RX bytes:312 (312.0 B)  TX bytes:312 (312.0 B)  
+
+
+5. 配置桥接网络
+
+# modprobe tun  
+# tunctl  -u <用户名>      #为某用户（-u 参数可选）创建虚拟网卡tapX (X代表数字0,1,2…本文使用的是tap0)  
+  
+# brctl addif br0 tap0   #将上一步创建的 tapX 加入网桥 br0  
+# ifconfig tap0 promisc up    #启用tapX 并设置为promisc 模式  
+
+我的执行结果如下（nehc是用户名）：
+
+[plain] view plaincopyprint?
+
+    nehc ~ # tunctl -u nehc  
+    Set 'tap0' persistent and owned by uid 1000  
+    nehc ~ # brctl addif br0 tap0  
+    nehc ~ # ifconfig tap0 promisc up  
+    nehc ~ # ifconfig  
+    br0       Link encap:Ethernet  HWaddr 18:03:73:af:66:99    
+              inet addr:10.65.10.80  Bcast:10.65.255.255  Mask:255.255.0.0  
+              UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1  
+              RX packets:1295 errors:0 dropped:400 overruns:0 frame:0  
+              TX packets:156 errors:0 dropped:0 overruns:0 carrier:0  
+              collisions:0 txqueuelen:0   
+              RX bytes:165002 (161.1 KiB)  TX bytes:85908 (83.8 KiB)  
+      
+    eth0      Link encap:Ethernet  HWaddr 18:03:73:af:66:99    
+              UP BROADCAST RUNNING PROMISC MULTICAST  MTU:1500  Metric:1  
+              RX packets:42725 errors:0 dropped:0 overruns:0 frame:0  
+              TX packets:14055 errors:0 dropped:0 overruns:0 carrier:0  
+              collisions:0 txqueuelen:1000   
+              RX bytes:15291865 (14.5 MiB)  TX bytes:2816677 (2.6 MiB)  
+              Interrupt:20 Memory:7ea00000-7ea20000   
+      
+    lo        Link encap:Local Loopback    
+              inet addr:127.0.0.1  Mask:255.0.0.0  
+              UP LOOPBACK RUNNING  MTU:16436  Metric:1  
+              RX packets:4 errors:0 dropped:0 overruns:0 frame:0  
+              TX packets:4 errors:0 dropped:0 overruns:0 carrier:0  
+              collisions:0 txqueuelen:0   
+              RX bytes:312 (312.0 B)  TX bytes:312 (312.0 B)  
+      
+    tap0      Link encap:Ethernet  HWaddr 62:65:15:b5:ad:25    
+              UP BROADCAST PROMISC MULTICAST  MTU:1500  Metric:1  
+              RX packets:0 errors:0 dropped:0 overruns:0 frame:0  
+              TX packets:0 errors:0 dropped:0 overruns:0 carrier:0  
+              collisions:0 txqueuelen:500   
+              RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)  
+
+
+
+五  安装 Guest OS
+
+1. 加载 kvm 模块
+[plain] view plaincopyprint?
+
+    # modprobe kvm_intel  
+
+
+2. 安装系统
+
+[plain] view plaincopyprint?
+
+    $ kvm -net nic,macaddr=00:00:00:00:00:00 -net tap,ifname=tap0,script=no,downscript=no -hda gentoo.img -cdrom gentoo_amd64.iso -m 512 -boot d  
+
+
+六 启动系统
+
+系统已经安装完毕，没必要像上一步提供那么多参数
+
+[plain] view plaincopyprint?
+
+    $ kvm -net nic,macaddr=00:00:00:00:00:00 -net tap,ifname=tap0,script=no,downscript=no gentoo.img   
+
+
+另外提供一种后台运行虚拟机的方法：
+
+[plain] view plaincopyprint?
+
+    $ kvm -net nic,macaddr=00:00:00:00:00:00 -net tap,ifname=tap0,script=no,downscript=no gentoo.img -vnc 0.0.0.0:0 -daemonize  
+
+启动后Guest OS 在后台运行，Host OS 没有 Guest OS 窗口弹出，适合运行在没有图形界面的系统（服务器应该都是这么干的吧）。
+
+这里虽然提供了 -vnc 参数，但 Guest OS 并没有安装 vnc ， 我还是习惯使用  ssh 远程连接。 
+
+
+我的执行结果：
+
+[plain] view plaincopyprint?
+
+    nehc@nehc ~/vms/els $ uname -a                # Host OS 信息  
+    Linux nehc 3.2.1-gentoo-r2 #2 SMP Tue Mar 13 20:08:39 CST 2012 x86_64 Intel(R) Core(TM) i3-2100 CPU @ 3.10GHz GenuineIntel GNU/Linux  
+    nehc@nehc ~/vms/els $ kvm -net nic,macaddr=00:00:00:00:00:00 -net tap,ifname=tap0,script=no,downscript=no els.vmdk -vnc 0.0.0.0:0 -daemonize  # 启动Guest OS, 后台运行  
+    nehc@nehc ~/vms/els $ ssh root@10.65.30.38    # ssh 连接后台运行的虚拟机  
+    Password:   
+    Last login: Thu Mar 15 11:27:41 CST 2012 from 10.65.10.80 on pts/0  
+    xut ~ # uname -a       # 虚拟机信息  
+    Linux xut 3.2.1-gentoo-r2 #1 Wed Mar 14 10:08:14 CST 2012 i686 QEMU Virtual CPU version 0.15.1 GenuineIntel GNU/Linux  
+    xut ~ # halt           # 关闭虚拟机  
+      
+    Broadcast message from root@xut (pts/0) (Thu Mar 15 11:31:48 2012):  
+      
+    The system is going down for system halt NOW!  
+    xut ~ #   
+
+附图：
+
+
+
+七  没有了

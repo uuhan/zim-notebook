@@ -1,0 +1,8 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2012-12-16T16:01:46+08:00
+
+====== vim高级技巧 ======
+Created 星期日 16 十二月 2012
+
+%s/\/\=strpart("offon", 3 * ("off" == submatch(0)), 3)/g

@@ -1,0 +1,151 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2013-01-21T12:27:25+08:00
+
+====== autofs ======
+Created 星期一 21 一月 2013
+
+     autofs:自动挂载器
+    自动挂载器是一个监视目录的守护进程，并在目标子目录被引用时，自动执行预定义的NFS挂载
+    自动挂载器由autofs服务脚本管理
+    自动挂载器由auto.master配置文件进行配置，该文件引用了一个按惯例称作/etc/auto.misc或其他类似名称的二级配置文件
+    autofs与NFS两者之间配后用的还是比较多的
+     
+    mount命令参数非常多，如下为与NFS相关的参数。
+    （1）-a：把/etc/fstab中列出的路径全部挂载。
+    （2）-t：需要mount的类型，如nfs等。
+    （3）-r：将mount的路径定为read only。
+    （4）-v mount：过程的每一个操作都有message传回到屏幕上。
+    （5）rsize=n：在NFS服务器读取文件时NFS使用的字节数，默认值是1 024个字节。
+    （6）wsize=n：向NFS服务器写文件时NFS使用的字节数，默认值是1 024个字节。
+    （7）timeo=n：从超时后到第1次重新传送占用的1/7秒的数目，默认值是7/7秒。
+    （8）retry=n：在放弃后台mount操作之前可以尝试的次数，默认值是7 000次。
+    （9）soft：使用软挂载的方式挂载系统，若Client的请求得不到回应，则重新请求并传回错误信息。
+    （10）hard：使用硬挂载的方式挂载系统，该值是默认值，重复请求直到NFS服务器回应。
+    （11）intr：允许NFS中断文件操作和向调用它的程序返回值，默认不允许文件操作被中断。
+    （12）fg：一直在提示符下执行重复挂载。
+    （13）bg：如果第1次挂载文件系统失败，继续在后台尝试执行挂载，默认值是失败后不在后台处理。
+    （14）tcp：对文件系统的挂载使用TCP，而不是默认的UDP。
+    说明：mount NFS服务器的另一个重要参数是hard（硬）mount或soft（软）mount。
+     
+    采用hard mount，NFS客户机会不断地尝试与NFS服务器连接（在后台一般不会给出任何提示信息），直到挂载上为止。
+    采用soft mount，会在前台尝试与NFS服务器连接，当收到错误信息后终止mount尝试，并给出相关信息。
+     
+    ######################简单配置###########################
+    1、挂载本地分区
+    在RHEL5.5中默认的是已经安装了autofs软件包了
+    [root@kumu ~]# rpm -qa autofs
+    autofs-5.0.1-0.rc2.143.el5
+    [root@kumu ~]#
+     
+    [root@kumu ~]# grep -v '^#' /etc/auto.master
+    /misc   /etc/auto.misc
+    #misc是神奇目录，auto.master定义了神奇目录为misc  auto.misc是自动挂载的配置文件
+    /net    -hosts
+    +auto.master
+    [root@kumu ~]# grep -v '^#' /etc/auto.misc
+     
+    cd              -fstype=iso9660,ro,nosuid,nodev :/dev/cdrom
+    #cd为目标目录名称    中间段则为挂载选项    最后是挂载目录
+    [root@kumu ~]#
+     
+    [root@kumu misc]# ls
+    [root@kumu misc]# grep sda4 /etc/auto.master
+    /misc/sda4      /etc/auto.sda   --timeout=60
+    [root@kumu misc]# grep sda4 /etc/auto.sda
+    sda4    -fstype=ext3    :/dev/sda4
+    [root@kumu misc]# service autofs start    //启动服务
+    启动automount：                                           [确定]
+    [root@kumu misc]# ls           //神奇目录自动出现
+    sda4
+    [root@kumu misc]# cd sda4/
+    [root@kumu sda4]# ls         //进入之后还是什么都没有
+    [root@kumu sda4]# cd sda4    //直接cd sda4，神奇的一刻到了，竟然进去了
+    [root@kumu sda4]# pwd
+    /misc/sda4/sda4
+    [root@kumu sda4]# ls
+    lost+found
+    [root@kumu sda4]# mount | grep sda4   //mount显示挂载成功
+    /dev/sda4 on /misc/sda4/sda4 type ext3 (rw)
+    [root@kumu sda4]#
+     
+     
+    2、挂载NFS共享目录
+    [root@kumu ~]# cat /etc/exports
+    /tmp    192.168.0.0/24(rw)
+    [root@kumu ~]# service nfs restart
+    关闭NFS mountd：                                          [失败]
+    关闭NFS 守护进程：                                        [失败]
+    关闭NFS quotas：                                          [失败]
+    关闭NFS 服务：                                            [失败]
+    启动NFS 服务：                                            [确定]
+    关掉NFS 配额：                                            [确定]
+    启动NFS 守护进程：                                        [确定]
+    启动NFS mountd：                                          [确定]
+    [root@kumu ~]# showmount -e 127.0.0.1  
+    Export list for 127.0.0.1:
+    /tmp 192.168.0.0/24
+    [root@kumu ~]# vi /etc/auto.master
+    [root@kumu ~]# grep tmp /etc/auto.master
+    /misc/tmp       /etc/auto.nfs
+    [root@kumu ~]# vi /etc/auto.nfs
+    [root@kumu tmp]# grep tmp /etc/auto.nfs
+    tmp     -typefs=nfs,rw  127.0.0.1:/tmp  
+    #这里是本地测试，远程测试的话把IP地址修改为远程NFS服务端即可
+    [root@kumu ~]# service autofs  restart
+    停止automount：                                           [确定]
+    启动automount：                                           [确定]
+    [root@kumu ~]# cd /misc/tmp/tmp
+    [root@kumu tmp]# ls
+    gconfd-root   scim-panel-socket:0-root  whatis.Qs3891
+    mapping-root  setuplog.txt
+    [root@kumu tmp]#
+     
+    3、挂载samba
+    挂载samba这里就不作演示了，除了在auto.master中加入之前类似语句，再建立一个auto.smb的文件，填入：
+    windows    -fstype=smbfs,username=admin%password ://hostname/ShareFolder
+    即可
+     
+    4、挂载本地镜像
+    [root@kumu ~]# grep iso /etc/auto.master
+    /misc/iso       /etc/auto.iso
+    [root@kumu ~]# cat /etc/auto.iso
+    iso             -fstype=iso9660,ro,nosuid,nodev,loop    :/root/rhel5u5.iso
+    [root@kumu ~]# service autofs restart
+    停止automount：                                           [确定]
+    启动automount：                                           [确定]
+    [root@kumu ~]# cd /misc/
+    [root@kumu misc]# ls
+    iso
+    [root@kumu misc]# cd iso/
+    [root@kumu iso]# ls
+    [root@kumu iso]# cd iso
+    [root@kumu iso]# ls
+    Cluster            README-te.html            RELEASE-NOTES-U5-en
+    ClusterStorage     README-zh_CN.html         RELEASE-NOTES-U5-en.html
+    EULA               README-zh_TW.html         RELEASE-NOTES-U5-es.html
+    eula.en_US         RELEASE-NOTES-as.html     RELEASE-NOTES-U5-fr.html
+    GPL                RELEASE-NOTES-bn.html     RELEASE-NOTES-U5-gu.html
+    ------省略------
+    [root@kumu iso]# mount | grep rhel5u5.iso
+    /root/rhel5u5.iso on /misc/iso/iso type iso9660 (ro,nosuid,nodev,loop=/dev/loop1)
+    [root@kumu iso]#
+     
+    autofs如此便可以结合yum安装软件了，不安装的时候就不挂载，安装软件的时候就自动去挂载
+    [root@kumu mnt]# tail -5 /etc/yum.repos.d/rhel-debuginfo.repo
+    [repo]
+    name=repo
+    baseurl=file:///misc/iso/iso/Server
+    enabled=1
+    gpgcheck=0
+    [root@kumu mnt]# yum clean all
+    Loaded plugins: rhnplugin, security
+    Cleaning up Everything
+    [root@kumu mnt]# yum list
+    Loaded plugins: rhnplugin, security
+    This system is not registered with RHN.
+    RHN support will be disabled.
+    repo                                                     | 1.3 kB     00:00
+    repo/primary                                             | 753 kB     00:00
+    repo                                                                  2348/2348
+    ------省略------

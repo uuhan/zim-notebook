@@ -1,0 +1,7 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2013-04-06T00:54:07+08:00
+
+====== imagemagick ======
+Created 星期六 06 四月 2013
+

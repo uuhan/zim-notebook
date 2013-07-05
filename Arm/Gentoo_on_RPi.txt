@@ -1,0 +1,234 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2013-01-09T12:36:45+08:00
+
+====== Gentoo on RPi ======
+Created 星期三 09 一月 2013
+
+Minimalist Gentoo for the Raspberry Pi
+
+I’ve spent the last several days working on a minimalist build of Gentoo Linux for my Raspberry Pi. By minimalist, I mean only the absolute smallest set of packages required to boot and log in. I intend to build another MPD Appliance, or something similar, with it, so I don’t need a full-blown Gentoo installation. The bare minimum packages are:
+
+    busybox
+    coreutils
+    grep
+    findutils
+    net-tools
+    e2fsprogs
+    dosfstools
+    module-init-tools
+    sed
+    file
+    less
+    kbd
+    shadow
+    gzip
+    bzip2
+    procps
+
+In addition, I installed the following to make my life easier:
+
+    bash
+    iproute2
+    ntp
+    vim
+
+Staging Areas
+
+Cross-compiling the system will take place in three stages:
+
+    Sysroot
+    Build root
+    Deployment root
+
+We’ll take advantage of Portage’s buildpkg FEATURES flag so that we don’t have to compile everything three times.
+Sysroot
+
+This stage is where the toolchain will be built and installed. Because of how crossdev works, build-time dependencies of all of our required software will also have to be installed here. The toolchain will look for headers and shared objects in the directory hierarchy under the sysroot when when compiling and linking. Unfortunately, that means all the dependencies will end up being installed here as well as in the build root.
+Build Root
+
+This stage is where we’ll actually build all the software we want to install on the Raspberry Pi. This intermediate stage is necessary because some software has runtime dependencies on toolchain components like glibc, and we can’t install those in the sysroot because it will break the cross-compiling toolchain.
+Deployment Root
+
+This stage is the final destination for the packages we built in the build root: the SD card (or QEMU disk image, if you don’t have a Raspberry Pi yet). While it isn’t strictly necessary to separate the build and deployment roots, it can make it easier to correct problems that may arise, and speed things up if you’re building for more than one device.
+Crossdev
+
+The first thing you’ll need to do is set up Crossdev. The Raspberry Pi’s System-on-a-Chip is a Broadcom BCM2835, which contains an ARM1176JZF-S CPU. I’ll be using the GNU standard C library, so the toolchain tuple will be armv6j-hardfloat-linux-gnueabi.
+
+crossdev -S -t armv6j-hardfloat-linux-gnueabi
+
+Make sure to use the -S option for crossdev; the current unstable versions of the toolchain do not work together and GCC fails to build.
+
+This will create the “sysroot” stage in /usr/armv6j-hardfloat-linux-gnueabi, where we’ll install the build-time dependencies for the software we want on the Pi.
+Configuration
+
+Now that we have a working toolchain for cross compiling, we need to configure Portage to build the software how we want. We’ll create a directory structure just like that of /etc/portage and fill it with a few important files.
+
+mkdir -p configroot/etc/portage/
+cp /usr/armv6j-hardfloat-linux-gnueabi/etc/portage/make.conf configroot/etc/portage
+
+You will probably want to modify the make.conf file crossdev produces. For example, I made these changes:
+
+    Remove ~arm from ACCEPT_KEYWORDS
+    Add the GCC flags to MARCH_TUNE for the Raspberry Pi, per the RPi Wiki. Note, -Ofast doesn’t work very well, and I had trouble compiling several packages with it. Using -Os or -O4 work just fine, though.
+    Add cxx, unicode, and ipv6 USE flags. I also removed the make-symlinks USE flag because I will also install Bash and a few other packages that collide with Busybox when that’s set.
+
+Next, you’ll need to pick a profile. Crossdev defaults to the embedded profile, which is fine. You could also use the arch/arm/armv6j profile, but then you’ll need to add some extra variables in configroot/etc/portage/profile/make.defaults, like KERNEL and USERLAND.
+
+ln -s /usr/portage/profiles/embedded configroot/etc/portage/make.profile
+
+You may also want to make package.use, package.mask, and/or package.keywords directories and populate them to your liking. I had to add =sys-apps/coreutils-8.20 to package.mask due to GNU Bug #12741, for example.
+
+Finally, we need to prevent Portage from installing any of the toolchain components in the SYSROOT (they’re already there) while we build the rest of the dependencies. You’ll need a package.provided directory in configroot/etc/portage/profile, and it should contain the full atom for each of the four packages built by crossdev (binutils, gcc, glibc, and linux-headers):
+
+mkdir -p configroot/etc/portage/profile/package.provided
+touch configroot/etc/portage/profile/package.provided/crossdev
+
+To find the versions of the cross toolchain, use equery:
+
+equery list 'cross-armv6j-hardfloat-linux-gnueabi/*'
+
+Then, put each atom (with the proper category, not the cross category) and version on a separate line in package.provided/crossdev. Something like this:
+
+sys-devel/binutils-2.22-r1
+sys-devel/gcc-4.5.4
+sys-libs/glibc-2.15-r3
+sys-kernel/linux-headers-3.6
+
+Now, Portage won’t pull in any of those packages when building the dependency tree for our packages.
+Install Build Dependencies
+
+No that we’ve got our cross toolchain, sysroot, and configuration ready to go, it is time to install the build dependencies for our packages. Put the list of packages you want to install in a variable (i.e. install_pkgs="busybox coreutils …"), and then install just their dependencies:
+
+armv6j-hardfloat-linux-gnueabi-emerge --onlydeps --buildpkg --oneshot --ask $install_pkgs
+
+Installing in the Build Root
+
+Once all the build dependencies are installed, it is time to start the build root stage. The build root will be almost identical to the deployment root, so we’ll everything in the build root first, so Portage will build a binary package and speed up the final step.
+
+Before installing anything, you need to remove the package.provided/crossdev file you created earlier. Since we’re no longer installing things in the sysroot, we do want any toolchain components to be installed, if necessary.
+
+rm configroot/etc/portage/profile/package.provided/crossdev
+
+Next, set the ROOT environment variable to the absolute path of your build root directory:
+
+export ROOT=/home/dustin/raspberrypi
+
+Remember, the build root is not your Raspberry Pi’s SD card, so don’t use that path just yet.
+Installing baselayout
+
+Baselayout needs to be installed in two passes. Baselayout needs to be the first package installed on the system, or it will fail to create directories and symbolic links correctly. To ensure it gets installed before anything else, we explicitly install it, without dependencies:
+
+armv6j-hardfloat-linux-gnueabi-emerge --nodeps --buildpkg --ask baselayout
+
+This basically creates an empty directory structure and some symlinks for compatibility. Once that’s done, we’ll go ahead and install the rest of the base system:
+
+armv6j-hardfloat-linux-gnueabi-emerge --onlydeps --buildpkg --usepkg --ask baselayout
+
+This will pull in the rest of the core system packages, including sysvinit, OpenRC, etc.
+Installing Selected Packages
+
+Once baselayout is installed, it is time to install the rest of the core packages:
+
+armv6j-hardfloat-linux-gnueabi-emerge --buildpkg --usepkg --ask $install_pkgs
+
+You’ll notice that most of the packages being installed at this point are binaries. That’s because we’ve already compiled them in the sysroot, so we don’t need to do it again.
+Installing in the Deployment Root
+
+Finally! Now we actually get to install stuff on the SD card!
+
+Make sure you’ve partitioned and formatted the SD card correctly. See the Raspberry Pi Gentoo Wiki Page for details.
+
+Mount the SD card partition you’ve designated as the root partition, and then reset the ROOT environment variable to point to it:
+
+mkdir /mnt/raspberrypi
+mount /dev/mmcblk0p2 /mnt/raspberrypi
+export ROOT=/mnt/raspberrypi/
+
+Before installing anything, there are a few empty directories we need to make manually. They aren’t created by any package, but are critical to boot the system:
+
+mkdir $ROOT/{boot,dev,proc,root,sys,tmp}
+
+Then, install the packages. Everything should just be binary merges at this point, so it won’t take too long.
+
+armv6j-hardfloat-linux-gnueabi-emerge --usepkg --ask $install_pkgs
+
+Finishing Up
+libgcc_s.so.1
+
+On ARM, Bash (and possibly other packages) depend on the libgcc runtime. This confused me for a while, because on my other minimalist system (which runs on an Atom 230), I didn’t need to install GCC and Bash worked fine. Fortunately, all you need is libgcc_s.so.1 to make it happy, not the whole GCC installation. You can copy the one from the cross toolchain:
+
+cp /usr/lib/gcc/armv6j-hardfloat-linux-gnueabi/4.5.4/libgcc_s.so.1 $ROOT/lib/
+
+Time Zone
+
+You need to set the time zone, just as you would on a full system:
+
+echo 'America/Chicago' > $ROOT/etc/timezone
+ln -snf /usr/share/zoneinfo/America/Chicago $ROOT/etc/localtime
+
+Root Password
+
+Setting the root password can be tricky. Although passwd has a --root option, it doesn’t seem to work in any situation I’ve tried. Normally, I’d recommend blanking the password and forcing it to be set at first log in, but since the Raspberry Pi has no idea what time it is initially, password expiration doesn’t work. Thus, you’ll just have to blank the password and hope you remember to set it to something secure on your own.
+
+sed -i 's/^root:.*/root::::::::/' $ROOT/etc/shadow
+
+Services
+swclock
+
+Since the Raspberry Pi has no real-time clock, the hwclock service just complains. We’ll remove it and add the swclock service instead. While not an accurate way of keeping time (setting the clock based on the mtime of a file created at last shutdown), it will hopefully at least get the clock in the right decade.
+
+rm $ROOT/etc/runlevels/boot/hwclock
+ln -s /etc/init.d/swclock $ROOT/etc/runlevels/boot/
+
+Network
+
+If you have a Model B device and intend to use the Ethernet port, you can have it start at boot:
+
+ln -s net.lo $ROOT/etc/init.d/net.eth0
+ln -s /etc/init.d/net.eth0 $ROOT/etc/runlevels/default
+
+NTP
+
+If you installed NTP, you’ll want it to start at boot as well, so the time on the device is accurate:
+
+ln -s /etc/init.d/ntp-client $ROOT/etc/runlevels/default
+ln -s /etc/init.d/ntpd $ROOT/etc/runlevels/default
+
+Firmware, Kernel, and Modules
+
+Clone the Raspberry Pi firmware project on Github. This will get you the latest GPU firmware and bootloader, as well as a precompiled Linux kernel with modules. You can always compile your own kernel later, if you want.
+
+git clone git://github.com/raspberrypi/firmware.git
+
+Mount the first partition of your SD card and copy the firmware there:
+
+mount /dev/mmcblk0p1 /mnt/raspberrypi/boot
+cp firmware/boot/* /mnt/raspberrypi/boot
+
+Copy the pre-compiled kerne modules to the /lib/ directory on your SD card’s root partition:
+
+cp -a firmware/modules $ROOT/lib/
+
+/etc/inittab
+
+You may want to make a couple of changes to /etc/inittab. First, I don’t like the new agetty behavior of clearing the screen before displaying the login prompt, at least on the first TTY; it makes it difficult to see error messages during the boot process. To change it, add --noclear to the c1 definition:
+
+sed -i 's/^c1\(.*\)agetty 38400\(.*\)/c1\1agetty --noclear 38400\2/'  $ROOT/etc/inittab
+
+Also, the default inittab sets up a serial console on /dev/ttyS0, but that port doesn’t exist on a Raspberry Pi. You can either comment out that line, or change it to use the UART port on the Pi:
+
+sed -i 's/ttyS0/ttyAMA0/g' $ROOT/etc/inittab
+
+/etc/fstab
+
+Finally, you need to make sure the fstab file in the deployment root is correct. For the Raspberry Pi, the SD card’s block device will always be /dev/mmcblk0. Each partition will be numbered, starting with 1, and prefixed with a “p”. The first partition would be /dev/mmcblk0p1, etc. Make sure you set the “type” column to vfat for the boot partition.
+That’s It…
+
+…but don’t get in a hurry! Make sure you sync all filesystem changes before you remove the SD card from your computer, since SD cards report writes as complete before actually committing them to the flash.
+
+sync ; sync ; sync
+umount /mnt/raspberrypi/boot
+umount /mnt/raspberrypi
+
+Now you can safely remove the SD card and pop it in your Raspberry Pi. Congratulations, and good luck!

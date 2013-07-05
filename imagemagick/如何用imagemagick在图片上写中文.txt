@@ -1,0 +1,20 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2013-04-06T00:54:22+08:00
+
+====== 如何用imagemagick在图片上写中文 ======
+Created 星期六 06 四月 2013
+
+如何用imagemagick在图片上写中文？在帮助文档中找到的最简单的例子：
+
+convert -background lightblue -fill blue \
+           -font SimSun -pointsize 48 label:@chinese_words.utf8 \
+           label_utf8.gif
+
+需要把中文或多字节文字以utf-8编码写在chinese_words.utf8中，就可以用convert命令在图片上画出中文来。也可以直接在命令行中写中文，但是必须是utf-8编码，如：
+
+convert -background lightblue -fill blue \
+           -font SimSun -pointsize 48 label:'某人的栖息地' \
+           label_utf8.gif
+
+最后还要注意的是，-font参数后面必须是中文字体，可以是中文字体文件的绝对路径。

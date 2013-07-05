@@ -1,0 +1,8 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2013-05-03T12:31:13+08:00
+
+====== 进制转换 ======
+Created 星期五 03 五月 2013
+
+echo $((16#F))

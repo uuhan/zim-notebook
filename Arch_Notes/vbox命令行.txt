@@ -1,0 +1,107 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2012-11-07T19:40:11+08:00
+
+====== vbox命令行 ======
+Created 星期三 07 十一月 2012
+
+
+Virtualbox中VBoxManage命令行工具的使用(linux环境)  
+
+2012-02-15 09:26:20|  分类： Linux |  标签：virtualbox   |字号 订阅
+
+1、创建虚拟机
+VBoxManage createvm –name "winxp" –register
+这里创建了一个名为winxp的虚拟机，创建完后可以用 VBoxManage list vms 命令查看一下当前可用的虚拟机，也可以用VBoxManage showvminfo winxp 命令查看一下当前虚拟机winxp的状态及一些默认配置。
+2、修改虚拟机设置
+为了使winxp能够正常工作，需要给它设置操作系统类型，内存，显存，启动顺序，磁盘位置，sata磁盘控制器，电源管理接口，CPU设置，网卡接口，远程管理等。
+(1)、创建磁盘
+VBoxManage createvdi --filename /home/virtualbox/winxp.vdi --size 5000 --remember
+(2)、修改操作系统类型
+VBoxManage modifyvm "winxp" --ostype "WindowsXP"
+(3)、设置内存以及显存大小
+VBoxManage modifyvm "winxp" --memory "512" --vram "16"
+(4)、设置启动顺序及挂载一个磁盘
+VBoxManage modifyvm "winxp" --boot1 dvd --hda "/home/virtualbox/winxp.vdi" --sata on
+以上命令可能会出现错误提示
+ERROR: Could not find a storage controller named 'IDE Controller'
+此时需要添加一个IDE接口即可
+VBoxManage storagectl winxp --name "IDE Controller" --add ide
+然后再重复执行出错的命令
+好了现在一个裸机除了已经基本建好了，接下来就是系统的安装，网卡稍后网络部分再谈。
+3、系统安装
+先将挂载的ISO文件，加到虚拟机的DVD光驱里
+VBoxManage modifyvm "winxp" --dvd /home/virtualbox/winxpsp3.iso
+如报一下错误
+ERROR: No storage device attached to device slot 0 on port 1 of controller 'IDE Controller'
+请如下执行
+将winxp.vdi 磁盘放在设备0的第0个端口
+VBoxManage storageattach winxp --storagectl "IDE Controller" --port 0 --device 0 --type hdd --medium /home/virtualbox/winxp.vdi
+将ISO挂载在设备0的第1个端口
+VBoxManage storageattach winxp --storagectl "IDE Controller" --port 1 --device 0 --type dvddrive --medium /home/virtualbox/winxpsp3.iso
+4、启动系统
+VBoxManage startvm "winxp" -type SDL
+如未安装QT环境请使用SDL
+
+共享剪切板
+
+1、使用方法
+
+VBoxManage modify "winxp" –clipboard "参数”
+
+其中参数可为：
+
+disabled| 不共享剪贴板
+
+hosttoguest| 将宿主机的剪贴板共享给虚拟机
+
+guesttohost| 将虚拟机的剪贴板共享给宿主机
+
+bidirectional] 宿主机和虚拟机共使用一个剪贴板
+
+使用共享文件夹
+1、添加一个共享文件夹
+VBoxManage sharedfolder add "WinXP" -name "shared" -hostpath "/home/xxx/shared"
+命令中WinXp为虚拟机的名称，shared为共享文件夹的名称，这个可以随意指定，/home/xxx/shared为共享文件夹的路径。
+
+然后启动虚拟机，进入系统后在开始->运行->cmd->回车，如入
+
+net use x: \\vboxsvr\shared
+
+x:为映射的驱动器符号，shared为共享文件夹的名称，vboxsvr是固定不变的
+
+2、删除一个共享文件夹
+
+在虚拟机关闭的状态下运行一下命令
+
+VBoxManage sharedfolder remove "WinXP" -name "shared"
+
+回车即可
+在虚拟机中使用USB设备
+1、查看已与主机连接的USB设备
+VBoxManage list usbhost
+执行后会出现类似一下的信息
+VirtualBox Command Line Management Interface Version 3.1.2
+(C) 2005-2009 Sun Microsystems, Inc.
+All rights reserved.
+Host USB Devices:
+UUID: 0b2517d9-7828-403e-b5da-38f5c6af419f
+VendorId: 0x054c (054C)
+ProductId: 0x02d2 (02D2)
+Revision: 1.0 (0100)
+Manufacturer: Sony
+Product: "PSP" Type A
+SerialNumber: E456A7C3AD3DEE32
+Address: /proc/bus/usb/001/003
+Current State: Busy
+UUID: 03e57f1a-9dec-443c-b4f8-80b1d60e0992
+VendorId: 0x08ff (08FF)
+ProductId: 0x2580 (2580)
+Revision: 6.35 (0635)
+Product: Fingerprint Sensor
+Address: /proc/bus/usb/003/002
+Current State: Available
+可以看到我现在在用的USB设备就两个，一个是我的PSP，一个是我本本的指纹识别模块。
+然后我们通过VBoxManage usbfilter add来把某个USB设备注册到虚拟机，下面以我的PSP为例：
+VBoxManage usbfilter add 0 -target winxp -name "PSP USB" -action hold -active yes -vendorid 054C -vendorid 02D2 -product "PSP" -remote no -serialnumber E456A7C3AD3DEE32
+需要注意的是name、product可以随便填，但是vendorid、vendorid、serialnumber一定要与上面输出地内容一致。

@@ -1,0 +1,14 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2013-01-05T15:25:25+08:00
+
+====== busybox ======
+Created 星期六 05 一月 2013
+
+2. 编译busybox
+a. 修改一下源码
+sun@ubuntu:/work/busybox/busybox-1.20.2$ vi include/libbb.h
+添加一行  #include  <sys/resource.h>
+
+== ==== ==
+ error: ‘RLIMIT_FSIZE’ undeclared (first use in this function)

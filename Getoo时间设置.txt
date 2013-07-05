@@ -1,0 +1,20 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2013-01-22T02:06:06+08:00
+
+====== Getoo时间设置 ======
+Created 星期二 22 一月 2013
+
+ 更新了gentoo后发现系统时间回到2000年1月1号了，再一看硬件时间也是这样。笔记本是2002年买的吧，不知道是不是BIOS电池快没电了， 反正笔记本隔段时间不用就有可能出现这种情况，开机时也显示Low Battery。总结一下如何把时间改回来，以备日后参考。
+
+0. 用date看系统时间，用hwclock --show看硬件时间。
+
+1. 先用ntpdate找一个时间服务器把系统时间调整回来。www.pool.ntp.org提供了很多时间服务器，当然也包括中国的。命令如下，
+        sudo ntpdate 0.cn.pool.ntp.org
+
+2. 用hwclock把系统时间写入到硬件时间（如果只修改系统时间，每次开机系统时间还会改回硬件时间），命令如下，
+        sudo hwclock --systohc
+
+3. 让系统定期从时间服务器更新一下时间。配置/etc/ntpd.conf和/etc/conf.d/ntp-client，然后可以把ntp-client和ntpd加入default run level，命令如下，
+        sudo rc-update add ntpd default
+        sudo rc-update add ntp-client default

@@ -1,0 +1,72 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2012-12-15T19:43:35+08:00
+
+====== 宏-单双井号 ======
+Created 星期六 15 十二月 2012
+
+ C（和C++）中的宏（Macro）属于编译器预处理的范畴，属于编译期概念（而非运行期概念）。下面对常遇到的宏的使用问题做了简单总结。
+关于#和##
+在C语言的宏中，#的功能是将其后面的宏参数进行字符串化操作（Stringfication），简单说就是在对它所引用的宏变量通过替换后在其左右各加上一个双引号。比如下面代码中的宏：
+#define WARN_IF(EXP) /
+  do{ if (EXP) /
+  fprintf(stderr, "Warning: " #EXP "/n"); } /
+  while(0)
+那么实际使用中会出现下面所示的替换过程：
+WARN_IF (divider == 0);
+  被替换为
+do {
+  if (divider == 0)
+  fprintf(stderr, "Warning" "divider == 0" "/n");
+} while(0);
+这样每次divider（除数）为0的时候便会在标准错误流上输出一个提示信息。
+      而##被称为连接符（concatenator），用来将两个Token连接为一个Token。注意这里连接的对象是Token就行，而不一定是宏的变量。比如你要做一个菜单项命令名和函数指针组成的结构体的数组，并且希望在函数名和菜单项命令名之间有直观的、名字上的关系。那么下面的代码就非常实用：
+struct command
+{
+  char * name;
+  void (*function) (void);
+};
+#define COMMAND(NAME) { NAME, NAME ## _command }
+// 然后你就用一些预先定义好的命令来方便的初始化一个command结构的数组了：
+struct command commands[] = {
+  COMMAND(quit),
+  COMMAND(help),
+  ...
+}
+COMMAND宏在这里充当一个代码生成器的作用，这样可以在一定程度上减少代码密度，间接地也可以减少不留心所造成的错误。我们还可以n个##符号连接 n+1个Token，这个特性也是#符号所不具备的。比如：
+#define LINK_MULTIPLE(a,b,c,d) a##_##b##_##c##_##d
+typedef struct _record_type LINK_MULTIPLE(name,company,position,salary);
+// 这里这个语句将展开为：
+// typedef struct _record_type name_company_position_salary;
+
+ 
+
+      ## 连接符号由两个井号组成，其功能是在带参数的宏定义中将两个子串(token)联接起来，从而形成一个新的子串。但它不可以是第一个或者最后一个子串。所谓的子串(token)就是指编译器能够识别的最小语法单元。
+
+     #符是把传递过来的参数当成字符串进行替代。
+
+      下面来看看它们是怎样工作的。这是MSDN上的一个例子。 假设程序中已经定义了这样一个带参数的宏：
+
+         #define paster( n ) printf( "token" #n " = %d", token##n )
+
+           同时又定义了一个整形变量： int token9 = 9;
+
+          现在在主程序中以下面的方式调用这个宏： paster( 9 );
+
+         那么在编译时，上面的这句话被扩展为： printf( "token" "9" " = %d", token9 );
+
+        注意到在这个例子中，paster(9);中的这个”9”被原封不动的当成了一个字符串，与”token”连接在了一起，从而成为了token9。而#n也被”9”所替代。 可想而知，上面程序运行的结果就是在屏幕上打印出token9=9
+
+ 
+        定义单行宏：主要有以下三种用法．
+   1) 前加##或后加##，将标记作为一个合法的标识符的一部分．注意，不是字符串．多用于多行的宏定义中．例如：
+       #define A(x)  T_##x
+则 int A(1) = 10; //等效于int T_1 = 10;
+#define A(x)  Tx##__
+则 int A(1) = 10; //等效于int T1__ = 10;
+    2) 前加#@，将标记转换为相应的字符，注意：仅对单一标记转换有效
+        #define B(x) #@x
+ 则B(a)即’a’，B(1)即’1’．但B(abc)却不甚有效．
+   3) 前加#，将标记转换为字符串．
+ #define C(x) #x
+ 则C(1+1) 即 ”1+1”．

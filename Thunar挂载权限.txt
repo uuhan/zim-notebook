@@ -1,0 +1,13 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2013-07-05T21:36:22+00:00
+
+====== Thunar挂载权限 ======
+Created 星期五 05 七月 2013
+
+polkit.addRule(function(action, subject) {
+if (action.id.indexOf("org.freedesktop.udisks2.") == 0){ 
+       return polkit.Result.YES;
+   }
+}
+);

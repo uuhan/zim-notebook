@@ -5,4 +5,18 @@ Creation-Date: 2013-07-18T21:18:18+08:00
 ====== Sage atlas编译错误 ======
 Created 星期四 18 七月 2013
 
-[[fi]]
+
+
+I think it is unavoidable that that ATLAS sometimes fails to get accurate timings. Nor is it always desirable to tune it to precisely your CPU, for example if you are building a binary distribution. Therefore, I propose we add a new variable SAGE_ATLAS_ARCH with values
+
+    auto - run through the tuning process
+    fast - reasonably modern ~2005 cpu: sse3 on x86, Niagara SPARC, ...
+    base - really old cpus
+    A particular architecture from ATLAS/CONFIG/ARCHS/*.tgz, e.g. AMD64K10h32SSE3 
+
+The ATLAS spkg then should then build a configuration according to SAGE_ATLAS_ARCH. If it it is not set, try 2xauto, if that fails fast, and if that fails base.
+
+The Fedora rpm package has pre-built configurations for various cpus and shows how to patch them into the ATLAS build system.
+
+
+SAGE_ATLAS_ARCH=fast make

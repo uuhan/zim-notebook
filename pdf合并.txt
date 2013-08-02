@@ -1,0 +1,20 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2013-07-21T14:54:41+08:00
+
+====== pdf合并 ======
+Created 星期日 21 七月 2013
+
+
+
+有时候我们从网上下载了一个pdf格式的电子书，但这个电子书是由很多个被分割的pdf打包的，我们怎么把这些pdf合并成一个单独的文档呢？
+
+用linux下的ghostscript吧，它能帮你完美地完成这个工作。
+
+首先确保系统正确安装了ghostscript。
+
+在命令行下，进入pdf文档的解压目录，然后输入：
+
+gs -dNOPAUSE -sDEVICE=pdfwrite -sOUTPUTFILE=all.pdf -dBATCH *.pdf
+
+all.pdf就是合并后的文档。

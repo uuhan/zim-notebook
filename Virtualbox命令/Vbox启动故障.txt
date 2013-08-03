@@ -1,0 +1,11 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2013-08-03T17:13:31+08:00
+
+====== Vbox启动故障 ======
+Created 星期六 03 八月 2013
+
+VERR_SUPLIB_SYMLINKS_ARE_NOT_PERMITTED
+
+[[/usr/lib]]
+[[/usr/lib64]] -> /usr/lib
